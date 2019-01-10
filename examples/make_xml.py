@@ -84,7 +84,7 @@ def create_txt(image_name, trainval_dataset, flag):
 			f.write(image_name.split(".jpg")[0] + "\n")
 			f.close()
 
-def parse_txt(csv_file_name, image_path, xml_output_path, trainval_dataset, flag):
+def parse_csv(csv_file_name, image_path, xml_output_path, trainval_dataset, flag):
 	df = pandas.read_csv(csv_file_name)
 	#print(df)
 	#print(df['ID'])
@@ -121,5 +121,5 @@ if __name__ == "__main__":
 	xml_output_path = "data/VOCdevkit/Annotations"
 	trainval_dataset = "data/VOCdevkit/ImageSets/Main"
 	
-	parse_txt(train_csv_file_name, image_path, xml_output_path, trainval_dataset, 1)
-	parse_txt(test_csv_file_name, image_path, xml_output_path, trainval_dataset, 0)
+	parse_csv(train_csv_file_name, image_path, xml_output_path, trainval_dataset, 1)
+	parse_csv(test_csv_file_name, image_path, xml_output_path, trainval_dataset, 0)
