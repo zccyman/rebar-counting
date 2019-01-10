@@ -117,9 +117,9 @@ if __name__ == "__main__":
 	train_csv_file_name = "train_labels.csv"
 	test_csv_file_name = "submit_example.csv"
 	
-	image_path = "VOCdevkit/JPEGImages"
-	xml_output_path = "VOCdevkit/Annotations"
-	trainval_dataset = "VOCdevkit/ImageSets/Main"
+	image_path = "data/VOCdevkit/JPEGImages"
+	xml_output_path = "data/VOCdevkit/Annotations"
+	trainval_dataset = "data/VOCdevkit/ImageSets/Main"
 	
 	parse_txt(train_csv_file_name, image_path, xml_output_path, trainval_dataset, 1)
 	parse_txt(test_csv_file_name, image_path, xml_output_path, trainval_dataset, 0)
