@@ -44,7 +44,7 @@ def create_xml(image_name, image_size, boxes, xml_output_path):
 	for i in range(len(boxes)):
 		#add object
 		object = ET.SubElement(root, "object")
-		ET.SubElement(object, "name").text = "oilStain"
+		ET.SubElement(object, "name").text = "rebar"
 		
 		object_bndbox_node = ET.SubElement(object, "bndbox")
 		ET.SubElement(object_bndbox_node, "xmin").text = str(boxes[i][0])
