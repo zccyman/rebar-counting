@@ -80,7 +80,7 @@ def create_txt(image_name, trainval_dataset, flag):
 			f.write(image_name.split(".jpg")[0] + "\n")
 			f.close()
 	else:
-		with open(trainval_dataset + "/val.txt", "w") as f:
+		with open(trainval_dataset + "/test.txt", "w") as f:
 			f.write(image_name.split(".jpg")[0] + "\n")
 			f.close()
 
