@@ -120,7 +120,7 @@ def parse_csv(csv_file_name, image_path, xml_output_path, trainval_dataset, flag
 					x1 = int(boxes[i][2])
 					y1 = int(boxes[i][3])
 					cv2.rectangle(image, (x0, y0), (x1,y1), (1, 1,255), 1)
-				cv2.namedWindow(image_name)
+				cv2.namedWindow(image_name, 0)
 				cv2.imshow(image_name, image)
 				cv2.waitKey(0)
 				cv2.destroyAllWindows()
