@@ -30,10 +30,17 @@ def create_xml(image_name, image_size, boxes, xml_output_path):
 	root = ET.Element("annotation")
 
 	ET.SubElement(root, "CreateVersion").text = str(2.5)
-	
+	ET.SubElement(root, "folder").text = " "
+
 	#image_name
 	ET.SubElement(root, "filename").text = image_name
-	
+	ET.SubElement(root, "path").text = " "
+
+	source_node = ET.SubElement(root, "source")
+	ET.SubElement(source_node, "database").text = "Unknown"
+
+	ET.SubElement(root, "score").text = str(0)
+
 	#image_size
 	size_node = ET.SubElement(root, "size")
 	
@@ -41,10 +48,15 @@ def create_xml(image_name, image_size, boxes, xml_output_path):
 	ET.SubElement(size_node, "height").text = str(image_size[1])
 	ET.SubElement(size_node, "depth").text = str(image_size[2])
 	
+	ET.SubElement(root, "segmented").text = str(0)
+
 	for i in range(len(boxes)):
 		#add object
 		object = ET.SubElement(root, "object")
 		ET.SubElement(object, "name").text = "rebar"
+		ET.SubElement(object, "pose").text = str(0)
+		ET.SubElement(object, "truncated").text = str(0)
+		ET.SubElement(object, "difficult").text = str(0)
 		
 		object_bndbox_node = ET.SubElement(object, "bndbox")
 		ET.SubElement(object_bndbox_node, "xmin").text = str(boxes[i][0])
@@ -146,9 +158,9 @@ if __name__ == "__main__":
 	train_csv_file_name = "train_labels.csv"
 	test_csv_file_name = "submit_example.csv"
 	
-	image_path = "data/VOCdevkit/JPEGImages"
-	xml_output_path = "data/VOCdevkit/Annotations"
-	trainval_dataset = "data/VOCdevkit/ImageSets/Main"
+	image_path = "data/VOCdevkit2007/VOC2007/JPEGImages"
+	xml_output_path = "data/VOCdevkit2007/VOC2007/Annotations"
+	trainval_dataset = "data/VOCdevkit2007/VOC2007/ImageSets/Main"
 	
 	parse_csv(train_csv_file_name, image_path, xml_output_path, trainval_dataset, 1)
 	parse_csv(test_csv_file_name, image_path, xml_output_path, trainval_dataset, 0)
