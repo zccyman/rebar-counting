@@ -138,4 +138,4 @@ if __name__ == "__main__":
 	trainval_dataset = "data/VOCdevkit/ImageSets/Main"
 	
 	parse_csv(train_csv_file_name, image_path, xml_output_path, trainval_dataset, 1)
-	#parse_csv(test_csv_file_name, image_path, xml_output_path, trainval_dataset, 0)
+	parse_csv(test_csv_file_name, image_path, xml_output_path, trainval_dataset, 0)
