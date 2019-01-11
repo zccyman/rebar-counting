@@ -3,7 +3,7 @@
 
 ## Prepare Data
 	
-- data/VOCdevkit/
+- data/VOCdevkit2007/VOC2007
 	- Annotations
 	- ImageSets
 	- JPEGImages
