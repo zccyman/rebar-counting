@@ -97,7 +97,15 @@ def parse_csv(csv_file_name, image_path, xml_output_path, trainval_dataset, flag
 	image_name = df['ID'][0]
 	for i in range(len(df['ID'])):
 		if image_name == df['ID'][i]:
+			#print(type(image_name))
+			if type(image_name) != str:
+				image_size = [0, 0, 0]
+				continue
 			image = cv2.imread(image_path + "/" + image_name, -1)
+			if image is None:
+				image_size = [0, 0, 0]
+				continue
+
 			image_size = [image.shape[1], image.shape[0], image.shape[2]]
 			boxes.append(df['Detection'][i].split(" ", 4))
 		else:
@@ -109,7 +117,15 @@ def parse_csv(csv_file_name, image_path, xml_output_path, trainval_dataset, flag
 			
 			boxes = []
 			image_name = df['ID'][i]
+			#print(type(image_name))
+			if type(image_name) != str:
+				image_size = [0, 0, 0]
+				continue
 			image = cv2.imread(image_path + "/" + image_name, -1)
+			if image is None:
+				image_size = [0, 0, 0]
+				continue
+
 			image_size = [image.shape[1], image.shape[0], image.shape[2]]
 			boxes.append(df['Detection'][i].split(" ", 4))
 	
@@ -122,4 +138,4 @@ if __name__ == "__main__":
 	trainval_dataset = "data/VOCdevkit/ImageSets/Main"
 	
 	parse_csv(train_csv_file_name, image_path, xml_output_path, trainval_dataset, 1)
-	parse_csv(test_csv_file_name, image_path, xml_output_path, trainval_dataset, 0)
+	#parse_csv(test_csv_file_name, image_path, xml_output_path, trainval_dataset, 0)
