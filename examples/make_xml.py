@@ -106,24 +106,30 @@ def parse_csv(csv_file_name, image_path, xml_output_path, trainval_dataset, flag
 	#input("")
 	
 	boxes = []
+	image_id = 0
 	image_name = df['ID'][0]
+	image_size = [0, 0, 0]
 	for i in range(len(df['ID'])):
 		if image_name == df['ID'][i]:
 			#print(type(image_name))
 			if type(image_name) != str:
-				image_size = [0, 0, 0]
 				continue
 			image = cv2.imread(image_path + "/" + image_name, -1)
 			if image is None:
-				image_size = [0, 0, 0]
 				continue
 
 			image_size = [image.shape[1], image.shape[0], image.shape[2]]
 			boxes.append(df['Detection'][i].split(" ", 4))
 		else:
-			print(image_name, image_size, len(boxes))
+			if flag:
+				print("train:", image_id, image_name, image_size, len(boxes))
+			else:
+				print("test:", image_id, image_name, image_size, len(boxes))
+			image_id = image_id + 1
+
 			#print(boxes)
 			#input("")
+			
 			if 0:
 				for i in range(len(boxes)):
 					#print(boxes[i][0], boxes[i][1], boxes[i][2], boxes[i][3], type(boxes[i][0]))
@@ -144,11 +150,9 @@ def parse_csv(csv_file_name, image_path, xml_output_path, trainval_dataset, flag
 			image_name = df['ID'][i]
 			#print(type(image_name))
 			if type(image_name) != str:
-				image_size = [0, 0, 0]
 				continue
 			image = cv2.imread(image_path + "/" + image_name, -1)
 			if image is None:
-				image_size = [0, 0, 0]
 				continue
 
 			image_size = [image.shape[1], image.shape[0], image.shape[2]]
