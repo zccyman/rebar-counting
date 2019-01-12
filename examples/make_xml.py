@@ -273,35 +273,123 @@ def augment_rotation(txt_input_path, image_input_path, xml_input_path, txt_outpu
 					cv2.waitKey(0)
 					cv2.destroyAllWindows()
 					break
+
+def augment_flip(txt_input_path, image_input_path, xml_input_path, txt_output_path, image_output_path, xml_output_path):
+	for image_name in open(txt_input_path + "/train.txt"):
+		image_name = image_name.strip('\n')
+		print(image_input_path + "/" + image_name + ".jpg")
+		image = cv2.imread(image_input_path + "/" + image_name + ".jpg", -1)
+
+		for flip in [-1, 0, 1]:
+			print("flip: ", flip)
+			image_flip = cv2.flip(image, flip)
+			image_mark = image_flip.copy()
+			cv2.imwrite(image_output_path + "/" + image_name + '_' + str(flip) + '_flip.jpg', image_flip)
+
+			shutil.copyfile(xml_input_path + "/" + image_name + ".xml", xml_output_path + "/" + image_name + '_' + str(flip) + "_flip.xml")
+
+			print(xml_output_path + "/" + image_name + '_' + str(flip) + "_flip.xml")
+			tree = ET.parse(xml_output_path + "/" + image_name + '_' + str(flip) + "_flip.xml")
+			root = tree.getroot()
+			root.find('filename').text = image_name + '_' + str(flip) + '_flip.jpg'
+
+			for obj in root.findall('object'):
+				shape_color_type = obj.find('shape').get('color')
+				color_type = (0, 0, 255)
+				if 'Red' == shape_color_type:
+					color_type = (0, 0, 255)
+				elif 'Green' == shape_color_type:
+					color_type = (0, 255, 0)
+
+				xmin = int(int(obj.find('bndbox/xmin').text) / 1)
+				ymin = int(int(obj.find('bndbox/ymin').text) / 1)
+				xmax = int(int(obj.find('bndbox/xmax').text) / 1)
+				ymax = int(int(obj.find('bndbox/ymax').text) / 1)
 				
+				if -1 == flip:#hv
+					t_xmin = image.shape[1] - 1 - xmin
+					t_ymin = image.shape[0] - 1 - ymin
+					t_xmax = image.shape[1] - 1 - xmax
+					t_ymax = image.shape[0] - 1 - ymax
+				elif 0 == flip:#v
+					t_xmin = xmin
+					t_ymin = image.shape[0] - 1 - ymin
+					t_xmax = xmax
+					t_ymax = image.shape[0] - 1 - ymax
+				elif 1 == flip:#h
+					t_xmin = image.shape[1] - 1 - xmin
+					t_ymin = ymin
+					t_xmax = image.shape[1] - 1 - xmax
+					t_ymax = ymax
+					
+				obj.find('bndbox/xmin').text = str(t_xmin)
+				obj.find('bndbox/ymin').text = str(t_ymin)
+				obj.find('bndbox/xmax').text = str(t_xmax)
+				obj.find('bndbox/ymax').text = str(t_ymax)
+
+				obj.findall('shape/points/x')[0].text = obj.find('bndbox/xmin').text
+				obj.findall('shape/points/y')[0].text = obj.find('bndbox/ymin').text
+				obj.findall('shape/points/x')[1].text = obj.find('bndbox/xmax').text
+				obj.findall('shape/points/y')[1].text = obj.find('bndbox/ymax').text
+
+				tree.write(xml_output_path + "/" + image_name + '_' + str(flip) + "_flip.xml", encoding='utf-8', xml_declaration=True)
+				cv2.rectangle(image_mark, (t_xmin, t_ymin), (t_xmax, t_ymax), color_type, 5)
+				cv2.imwrite(image_output_path + "/" + image_name + '_' + str(flip)  + "_flip_MARKED.jpg", image_mark)
+				if 0:
+					#cv2.rectangle(image_mark, (xmin, ymin), (xmax, ymax), (0, 0, 255), 5)
+					cv2.rectangle(image_mark, (t_xmin, t_ymin), (t_xmax, t_ymax), (0, 255, 0), 5)			
+					cv2.namedWindow(str(flip), 0)
+					cv2.imshow(str(flip), image_mark)
+					cv2.waitKey(0)
+					cv2.destroyAllWindows()
+					break
+
 def csvToxml():
 	train_csv_file_name = "train_labels.csv"
 	test_csv_file_name = "submit_example.csv"
 	
-	image_path = "data/VOCdevkit2007/VOC2007/JPEGImages"
-	xml_output_path = "data/VOCdevkit2007/VOC2007/Annotations"
-	trainval_dataset = "data/VOCdevkit2007/VOC2007/ImageSets/Main"
+	image_path = "data/VOCdevkit2007/VOC2007_origin/JPEGImages"
+	xml_output_path = "data/VOCdevkit2007/VOC2007_origin/Annotations"
+	trainval_dataset = "data/VOCdevkit2007/VOC2007_origin/ImageSets/Main"
 	
 	parse_csv(train_csv_file_name, image_path, xml_output_path, trainval_dataset, 1)
 	#parse_csv(test_csv_file_name, image_path, xml_output_path, trainval_dataset, 0)
 
-def augment():
-	txt_input_path = "data/VOCdevkit2007/VOC2007/ImageSets/Main"
-	image_input_path = "data/VOCdevkit2007/VOC2007/JPEGImages"
-	xml_input_path = "data/VOCdevkit2007/VOC2007/Annotations"
+def augment(is_rotate, is_flip, is_crop):
+	txt_input_path = "data/VOCdevkit2007/VOC2007_origin/ImageSets/Main"
+	image_input_path = "data/VOCdevkit2007/VOC2007_origin/JPEGImages"
+	xml_input_path = "data/VOCdevkit2007/VOC2007_origin/Annotations"
 
-	txt_output_path = "data/VOCdevkit2007/VOC2007_rotation/ImageSets/Main"
-	image_output_path = "data/VOCdevkit2007/VOC2007_rotation/JPEGImages"
-	xml_output_path = "data/VOCdevkit2007/VOC2007_rotation/Annotations"
-	
-	if_no_exist_path_and_make_path(txt_output_path)
-	if_no_exist_path_and_make_path(image_output_path)
-	if_no_exist_path_and_make_path(xml_output_path)
+	if is_rotate:
+		txt_output_path = "data/VOCdevkit2007/VOC2007_rotation/ImageSets/Main"
+		image_output_path = "data/VOCdevkit2007/VOC2007_rotation/JPEGImages"
+		xml_output_path = "data/VOCdevkit2007/VOC2007_rotation/Annotations"
+		
+		if_no_exist_path_and_make_path(txt_output_path)
+		if_no_exist_path_and_make_path(image_output_path)
+		if_no_exist_path_and_make_path(xml_output_path)
 
-	augment_rotation(txt_input_path, image_input_path, xml_input_path, \
-					txt_output_path, image_output_path, xml_output_path)
+		augment_rotation(txt_input_path, image_input_path, xml_input_path, txt_output_path, image_output_path, xml_output_path)
+
+	if is_flip:
+		txt_output_path = "data/VOCdevkit2007/VOC2007_flip/ImageSets/Main"
+		image_output_path = "data/VOCdevkit2007/VOC2007_flip/JPEGImages"
+		xml_output_path = "data/VOCdevkit2007/VOC2007_flip/Annotations"
+		
+		if_no_exist_path_and_make_path(txt_output_path)
+		if_no_exist_path_and_make_path(image_output_path)
+		if_no_exist_path_and_make_path(xml_output_path)
+
+		augment_flip(txt_input_path, image_input_path, xml_input_path, txt_output_path, image_output_path, xml_output_path)
+
+	if is_crop:
+		pass
 
 if __name__ == "__main__":
 	#csvToxml()
-	augment()
+
+	is_rotate = 0
+	is_flip = 1
+	is_crop = 0
+	augment(is_rotate, is_flip, is_crop)
 
