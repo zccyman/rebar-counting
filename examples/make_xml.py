@@ -82,13 +82,17 @@ def create_xml(image_name, image_size, boxes, xml_output_path):
 def create_txt(image_name, trainval_dataset, flag):
 	if not os.path.exists(trainval_dataset):
 		os.makedirs(trainval_dataset)
-
-	with open(trainval_dataset + "/trainval.txt", "a") as f:
-			f.write(image_name.split(".jpg")[0] + "\n")
-			f.close()
 			
 	if flag:
 		with open(trainval_dataset + "/train.txt", "a") as f:
+			f.write(image_name.split(".jpg")[0] + "\n")
+			f.close()
+		
+		with open(trainval_dataset + "/val.txt", "a") as f:
+			f.write(image_name.split(".jpg")[0] + "\n")
+			f.close
+
+		with open(trainval_dataset + "/trainval.txt", "a") as f:
 			f.write(image_name.split(".jpg")[0] + "\n")
 			f.close()
 	else:
@@ -157,7 +161,12 @@ def parse_csv(csv_file_name, image_path, xml_output_path, trainval_dataset, flag
 
 			image_size = [image.shape[1], image.shape[0], image.shape[2]]
 			boxes.append(df['Detection'][i].split(" ", 4))
-	
+
+def augment(trainval_dataset, image_path, xml_output_path):
+	with open(trainval_dataset + "/train.txt", 'r') as f:
+		image_name = f.read()
+
+
 if __name__ == "__main__":
 	train_csv_file_name = "train_labels.csv"
 	test_csv_file_name = "submit_example.csv"
@@ -167,4 +176,4 @@ if __name__ == "__main__":
 	trainval_dataset = "data/VOCdevkit2007/VOC2007/ImageSets/Main"
 	
 	parse_csv(train_csv_file_name, image_path, xml_output_path, trainval_dataset, 1)
-	parse_csv(test_csv_file_name, image_path, xml_output_path, trainval_dataset, 0)
+	#parse_csv(test_csv_file_name, image_path, xml_output_path, trainval_dataset, 0)
