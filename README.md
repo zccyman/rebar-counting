@@ -14,3 +14,8 @@ download data from [here](https://pan.baidu.com/s/1NxACM1coAXthmXizXKyhow?errno=
 ```
 python make_xml.py
 ```
+
+## Data Augment
+	- Rotation
+	- Flip
+	- Crop
