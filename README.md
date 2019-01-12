@@ -16,6 +16,7 @@ python make_xml.py
 ```
 
 ## Data Augment
+- Methods
 	- Rotation
 	- Flip
 	- Crop
