@@ -124,14 +124,22 @@ def parse_csv(csv_file_name, image_path, xml_output_path, trainval_dataset, flag
 		if image_name == df['ID'][i]:
 			#print(type(image_name))
 			if type(image_name) != str:
+				print("image_name is not exist...")
 				continue
 			image = cv2.imread(image_path + "/" + image_name, -1)
 			if image is None:
+				print("image is NULL...")
 				continue
 
 			image_size = [image.shape[1], image.shape[0], image.shape[2]]
 			boxes.append(df['Detection'][i].split(" ", 4))
 		else:
+			if 0 == image_id:
+				for _str in ["test.txt", "train.txt", "val.txt", "trainval.txt"]:
+					t_path = trainval_dataset + "/" + _str
+					if os.path.exists(t_path):
+						os.remove(t_path)
+
 			if flag:
 				print("train:", image_id, image_name, image_size, len(boxes))
 			else:
@@ -141,19 +149,21 @@ def parse_csv(csv_file_name, image_path, xml_output_path, trainval_dataset, flag
 			#print(boxes)
 			#input("")
 			
+			image_mark = image.copy()
+			for box_idx in range(len(boxes)):
+				#print(boxes[box_idx][0], boxes[box_idx][1], boxes[box_idx][2], boxes[box_idx][3], type(boxes[i][0]))
+				x0 = int(boxes[box_idx][0])
+				y0 = int(boxes[box_idx][1])
+				x1 = int(boxes[box_idx][2])
+				y1 = int(boxes[box_idx][3])
+				cv2.rectangle(image_mark, (x0, y0), (x1,y1), (1, 1, 255), 5)
+				cv2.imwrite(image_path + "/" + image_name.split(".jpg")[0] + "_MARKED.jpg", image_mark)
 			if 0:
-				for i in range(len(boxes)):
-					#print(boxes[i][0], boxes[i][1], boxes[i][2], boxes[i][3], type(boxes[i][0]))
-					x0 = int(boxes[i][0])
-					y0 = int(boxes[i][1])
-					x1 = int(boxes[i][2])
-					y1 = int(boxes[i][3])
-					cv2.rectangle(image, (x0, y0), (x1,y1), (1, 1,255), 1)
 				cv2.namedWindow(image_name, 0)
 				cv2.imshow(image_name, image)
 				cv2.waitKey(0)
 				cv2.destroyAllWindows()
-
+			
 			create_xml(image_name, image_size, boxes, xml_output_path)
 			create_txt(image_name, trainval_dataset, flag)
 			
@@ -161,9 +171,11 @@ def parse_csv(csv_file_name, image_path, xml_output_path, trainval_dataset, flag
 			image_name = df['ID'][i]
 			#print(type(image_name))
 			if type(image_name) != str:
+				print("image_name is not exist...")
 				continue
 			image = cv2.imread(image_path + "/" + image_name, -1)
 			if image is None:
+				print("image is NULL...")
 				continue
 
 			image_size = [image.shape[1], image.shape[0], image.shape[2]]
@@ -210,11 +222,11 @@ def augment_rotation(txt_input_path, image_input_path, xml_input_path, txt_outpu
 					return x, y
 
 				shape_color_type = obj.find('shape').get('color')
-				color_type = (0, 0, 255)
+				color_type = (1, 1, 255)
 				if 'Red' == shape_color_type:
-					color_type = (0, 0, 255)
+					color_type = (1, 1, 255)
 				elif 'Green' == shape_color_type:
-					color_type = (0, 255, 0)
+					color_type = (1, 255, 1)
 
 				xmin = int(int(obj.find('bndbox/xmin').text) / 1)
 				ymin = int(int(obj.find('bndbox/ymin').text) / 1)
@@ -260,14 +272,14 @@ def augment_rotation(txt_input_path, image_input_path, xml_input_path, txt_outpu
 				cv2.rectangle(image_mark, (t_xmin, t_ymin), (t_xmax, t_ymax), color_type, 5)
 				cv2.imwrite(image_output_path + "/" + image_name + '_' + str(angle)  + "_rotate_MARKED.jpg", image_mark)
 				if 0:
-					#cv2.rectangle(image_mark, (xmin, ymin), (xmax, ymax), (0, 0, 255), 5)
-					#cv2.rectangle(image_mark, (t_xmin, t_ymin), (t_xmax, t_ymax), (0, 255, 0), 5)
-					#cv2.circle(image_mark, (t_xmin, t_ymin), 5, (0, 255, 0), -1)
-					#cv2.circle(image_mark, (t_xmax, t_ymax), 5, (0, 255, 0), -1)
-					#cv2.circle(image_mark, (t_x00, t_y00), 5, (255, 0, 0), -1)
-					#cv2.circle(image_mark, (t_x01, t_y01), 5, (0, 255, 0), -1)
-					#cv2.circle(image_mark, (t_x10, t_y10), 5, (0, 255, 0), -1)
-					#cv2.circle(image_mark, (t_x11, t_y11), 5, (0, 255, 0), -1)				
+					#cv2.rectangle(image_mark, (xmin, ymin), (xmax, ymax), (1, 1, 255), 5)
+					#cv2.rectangle(image_mark, (t_xmin, t_ymin), (t_xmax, t_ymax), (1, 255, 1), 5)
+					#cv2.circle(image_mark, (t_xmin, t_ymin), 5, (1, 255, 1), -1)
+					#cv2.circle(image_mark, (t_xmax, t_ymax), 5, (1, 255, 1), -1)
+					#cv2.circle(image_mark, (t_x00, t_y00), 5, (255, 1, 1), -1)
+					#cv2.circle(image_mark, (t_x01, t_y01), 5, (1, 255, 1), -1)
+					#cv2.circle(image_mark, (t_x10, t_y10), 5, (1, 255, 1), -1)
+					#cv2.circle(image_mark, (t_x11, t_y11), 5, (1, 255, 1), -1)				
 					cv2.namedWindow(str(angle), 0)
 					cv2.imshow(str(angle), image_mark)
 					cv2.waitKey(0)
@@ -295,11 +307,11 @@ def augment_flip(txt_input_path, image_input_path, xml_input_path, txt_output_pa
 
 			for obj in root.findall('object'):
 				shape_color_type = obj.find('shape').get('color')
-				color_type = (0, 0, 255)
+				color_type = (1, 1, 255)
 				if 'Red' == shape_color_type:
-					color_type = (0, 0, 255)
+					color_type = (1, 1, 255)
 				elif 'Green' == shape_color_type:
-					color_type = (0, 255, 0)
+					color_type = (1, 255, 1)
 
 				xmin = int(int(obj.find('bndbox/xmin').text) / 1)
 				ymin = int(int(obj.find('bndbox/ymin').text) / 1)
@@ -336,8 +348,8 @@ def augment_flip(txt_input_path, image_input_path, xml_input_path, txt_output_pa
 				cv2.rectangle(image_mark, (t_xmin, t_ymin), (t_xmax, t_ymax), color_type, 5)
 				cv2.imwrite(image_output_path + "/" + image_name + '_' + str(flip)  + "_flip_MARKED.jpg", image_mark)
 				if 0:
-					#cv2.rectangle(image_mark, (xmin, ymin), (xmax, ymax), (0, 0, 255), 5)
-					cv2.rectangle(image_mark, (t_xmin, t_ymin), (t_xmax, t_ymax), (0, 255, 0), 5)			
+					#cv2.rectangle(image_mark, (xmin, ymin), (xmax, ymax), (1, 1, 255), 5)
+					cv2.rectangle(image_mark, (t_xmin, t_ymin), (t_xmax, t_ymax), (1, 255, 1), 5)			
 					cv2.namedWindow(str(flip), 0)
 					cv2.imshow(str(flip), image_mark)
 					cv2.waitKey(0)
@@ -352,6 +364,10 @@ def csvToxml():
 	xml_output_path = "data/VOCdevkit2007/VOC2007_origin/Annotations"
 	trainval_dataset = "data/VOCdevkit2007/VOC2007_origin/ImageSets/Main"
 	
+	if_no_exist_path_and_make_path(image_path)
+	if_no_exist_path_and_make_path(xml_output_path)
+	if_no_exist_path_and_make_path(trainval_dataset)
+		
 	parse_csv(train_csv_file_name, image_path, xml_output_path, trainval_dataset, 1)
 	#parse_csv(test_csv_file_name, image_path, xml_output_path, trainval_dataset, 0)
 
@@ -386,9 +402,9 @@ def augment(is_rotate, is_flip, is_crop):
 		pass
 
 if __name__ == "__main__":
-	#csvToxml()
+	csvToxml()
 
-	is_rotate = 0
+	is_rotate = 1
 	is_flip = 1
 	is_crop = 0
 	augment(is_rotate, is_flip, is_crop)
