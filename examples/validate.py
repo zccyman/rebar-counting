@@ -157,7 +157,7 @@ def parse_csv(csv_file_name, image_path, xml_output_path, trainval_dataset, flag
 				x1 = int(boxes[box_idx][2])
 				y1 = int(boxes[box_idx][3])
 				cv2.rectangle(image_mark, (x0, y0), (x1,y1), (1, 1, 255), 5)
-				cv2.imwrite(image_path + "/" + image_name.split(".jpg")[0] + "_MARKED.jpg", image_mark)
+				cv2.imwrite(image_path + "/" + image_name.split(".jpg")[0] + ".jpg", image_mark)
 			if 0:
 				cv2.namedWindow(image_name, 0)
 				cv2.imshow(image_name, image)
