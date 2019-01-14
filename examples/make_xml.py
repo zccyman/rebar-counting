@@ -12,6 +12,12 @@ import numpy as np
 import xml.etree.cElementTree as ET
 from xml.etree.ElementTree import Element,ElementTree
 
+import matplotlib.pyplot as plt
+
+ratio = []
+box_w = []
+box_h = []
+
 def if_no_exist_path_and_make_path(path):
     if not os.path.exists(path):
         os.makedirs(path)
@@ -64,6 +70,31 @@ def create_xml(image_name, image_size, boxes, xml_output_path):
 		ET.SubElement(object, "pose").text = str(0)
 		ET.SubElement(object, "truncated").text = str(0)
 		ET.SubElement(object, "difficult").text = str(0)
+		
+		if 0:
+			ratio_hw = (int(boxes[i][3]) - int(boxes[i][1])) / (int(boxes[i][2]) - int(boxes[i][0]))
+			box_h_ = (int(boxes[i][3]) - int(boxes[i][1])) / image_size[1]
+			box_w_ = (int(boxes[i][2]) - int(boxes[i][0])) / image_size[0]
+		
+			ratio.append(ratio_hw)
+			box_h.append(box_h_)
+			box_w.append(box_w_)
+
+			#show and saveimage
+			fig0 = plt.figure(0)
+			plt.cla()
+			plt.scatter(range(len(ratio)), ratio, marker = 'o', color = 'r', s = 15)
+			fig0.savefig('ratio.jpg')
+
+			fig1 = plt.figure(1)
+			plt.cla()
+			plt.scatter(range(len(box_h)), box_h, marker = 'o', color = 'r', s = 15)
+			fig1.savefig('box_h.jpg')
+
+			fig2 = plt.figure(2)
+			plt.cla()
+			plt.scatter(range(len(box_w)), box_w, marker = 'o', color = 'r', s = 15)
+			fig2.savefig('box_w.jpg')
 		
 		object_bndbox_node = ET.SubElement(object, "bndbox")
 		ET.SubElement(object_bndbox_node, "xmin").text = str(boxes[i][0])
