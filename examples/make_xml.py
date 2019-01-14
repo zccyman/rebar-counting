@@ -84,17 +84,17 @@ def create_xml(image_name, image_size, boxes, xml_output_path):
 			fig0 = plt.figure(0)
 			plt.cla()
 			plt.scatter(range(len(ratio)), ratio, marker = 'o', color = 'r', s = 15)
-			fig0.savefig('ratio.jpg')
+			fig0.savefig('doc/images/ratio.jpg')
 
 			fig1 = plt.figure(1)
 			plt.cla()
 			plt.scatter(range(len(box_h)), box_h, marker = 'o', color = 'r', s = 15)
-			fig1.savefig('box_h.jpg')
+			fig1.savefig('doc/images/box_h.jpg')
 
 			fig2 = plt.figure(2)
 			plt.cla()
 			plt.scatter(range(len(box_w)), box_w, marker = 'o', color = 'r', s = 15)
-			fig2.savefig('box_w.jpg')
+			fig2.savefig('doc/images/box_w.jpg')
 		
 		object_bndbox_node = ET.SubElement(object, "bndbox")
 		ET.SubElement(object_bndbox_node, "xmin").text = str(boxes[i][0])
