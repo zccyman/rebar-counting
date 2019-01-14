@@ -70,7 +70,9 @@ def create_xml(image_name, image_size, boxes, xml_output_path):
 		ET.SubElement(object, "pose").text = str(0)
 		ET.SubElement(object, "truncated").text = str(0)
 		ET.SubElement(object, "difficult").text = str(0)
-		
+		ET.SubElement(object, "staintype").text = " "
+		ET.SubElement(object, "level").text = str(1)
+	
 		if 0:
 			ratio_hw = (int(boxes[i][3]) - int(boxes[i][1])) / (int(boxes[i][2]) - int(boxes[i][0]))
 			box_h_ = (int(boxes[i][3]) - int(boxes[i][1])) / image_size[1]
@@ -104,7 +106,7 @@ def create_xml(image_name, image_size, boxes, xml_output_path):
 
 		object_shape_node = ET.SubElement(object, "shape")
 		shape_points_node = ET.SubElement(object_shape_node, "points")
-		shape_points_node.attrib = {"type": "rect", "color": "Green", "thickness": "1"}
+		shape_points_node.attrib = {"type":"rect","color":"Red","thickness":"3"}
 		
 		ET.SubElement(shape_points_node, "x").text = str(boxes[i][0])
 		ET.SubElement(shape_points_node, "y").text = str(boxes[i][1])
