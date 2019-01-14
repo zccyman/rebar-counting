@@ -182,6 +182,14 @@ def parse_csv(csv_file_name, image_path, xml_output_path, trainval_dataset, flag
 			boxes.append(df['Detection'][i].split(" ", 4))
 
 def augment_rotation(txt_input_path, image_input_path, xml_input_path, txt_output_path, image_output_path, xml_output_path):
+
+	angle_sin_array = []
+	angle_cos_array = []
+	angle_array = [-180, -90, -6, -4, -2, 0, 2, 4, 6, 90]
+	for theta_ in angle_array:
+		angle_sin_array.append(math.sin(theta_ * (-np.pi / 180.0)))
+		angle_cos_array.append(math.cos(theta_ * (-np.pi / 180.0)))
+	
 	for image_name in open(txt_input_path + "/train.txt"):
 		image_name = image_name.strip('\n')
 		print(image_input_path + "/" + image_name + ".jpg")
@@ -189,26 +197,31 @@ def augment_rotation(txt_input_path, image_input_path, xml_input_path, txt_outpu
 		center_x = image.shape[1] >> 1
 		center_y = image.shape[0] >> 1
 
-		for angle in [-180, -90, -6, -4, -2, 0, 2, 4, 6, 90]:
-			print("angle: ", angle)
-			M = cv2.getRotationMatrix2D((center_x, center_y), angle, 1.0)
+		for angle_idx in range(len(angle_array)):
+			print("angle: ", angle_array[angle_idx])
+			M = cv2.getRotationMatrix2D((center_x, center_y), angle_array[angle_idx], 1.0)
 			image_RT = cv2.warpAffine(image, M, (image.shape[1], image.shape[0]))
 			image_mark = image_RT.copy()
-			cv2.imwrite(image_output_path + "/" + image_name + '_' + str(angle) + '_rotate.jpg', image_RT)
+			cv2.imwrite(image_output_path + "/" + image_name + '_' + str(angle_array[angle_idx]) + '_rotate.jpg', image_RT)
 
-			shutil.copyfile(xml_input_path + "/" + image_name + ".xml", xml_output_path + "/" + image_name + '_' + str(angle) + "_rotate.xml")
+			shutil.copyfile(xml_input_path + "/" + image_name + ".xml", xml_output_path + "/" + image_name + '_' + str(angle_array[angle_idx]) + "_rotate.xml")
 
-			print(xml_output_path + "/" + image_name + '_' + str(angle) + "_rotate.xml")
-			tree = ET.parse(xml_output_path + "/" + image_name + '_' + str(angle) + "_rotate.xml")
+			print(xml_output_path + "/" + image_name + '_' + str(angle_array[angle_idx]) + "_rotate.xml")
+			tree = ET.parse(xml_output_path + "/" + image_name + '_' + str(angle_array[angle_idx]) + "_rotate.xml")
 			root = tree.getroot()
-			root.find('filename').text = image_name + '_' + str(angle) + '_rotate.jpg'
+			root.find('filename').text = image_name + '_' + str(angle_array[angle_idx]) + '_rotate.jpg'
 
 			for obj in root.findall('object'):
-				def rotate_point(x0, y0, center_x, center_y, theta):
-					pi = 3.1415926535897932384626433832795
-					theta = - theta * pi / 180.0
-					x = (x0 - center_x) * math.cos(theta) - (y0 - center_y) * math.sin(theta) + center_x
-					y = (x0 - center_x) * math.sin(theta) + (y0 - center_y) * math.cos(theta) + center_y
+				def rotate_point(x0, y0, center_x, center_y, theta, idx):
+					#pi = 3.1415926535897932384626433832795
+					#theta = - theta * pi / 180.0
+					#x = (x0 - center_x) * math.cos(theta) - (y0 - center_y) * math.sin(theta) + center_x
+					#y = (x0 - center_x) * math.sin(theta) + (y0 - center_y) * math.cos(theta) + center_y
+					
+					delta_x = (x0 - center_x)
+					delta_y = (y0 - center_y)
+					x = delta_x * angle_cos_array[idx] - delta_y * angle_sin_array[idx] + center_x
+					y = delta_x * angle_sin_array[idx] + delta_y * angle_cos_array[idx] + center_y
 					
 					x = math.floor(x)
 					y = math.floor(y)
@@ -245,10 +258,10 @@ def augment_rotation(txt_input_path, image_input_path, xml_input_path, txt_outpu
 				x10 = x00
 				y10 = y11
 
-				t_x00, t_y00 = rotate_point(x00, y00, center_x, center_y, angle)
-				t_x01, t_y01 = rotate_point(x01, y01, center_x, center_y, angle)
-				t_x10, t_y10 = rotate_point(x10, y10, center_x, center_y, angle)
-				t_x11, t_y11 = rotate_point(x11, y11, center_x, center_y, angle)
+				t_x00, t_y00 = rotate_point(x00, y00, center_x, center_y, angle_array[angle_idx], angle_idx)
+				t_x01, t_y01 = rotate_point(x01, y01, center_x, center_y, angle_array[angle_idx], angle_idx)
+				t_x10, t_y10 = rotate_point(x10, y10, center_x, center_y, angle_array[angle_idx], angle_idx)
+				t_x11, t_y11 = rotate_point(x11, y11, center_x, center_y, angle_array[angle_idx], angle_idx)
 
 				t_xarray = [t_x00, t_x01, t_x10, t_x11]
 				t_yarray = [t_y00, t_y01, t_y10, t_y11]
@@ -268,9 +281,9 @@ def augment_rotation(txt_input_path, image_input_path, xml_input_path, txt_outpu
 				obj.findall('shape/points/x')[1].text = obj.find('bndbox/xmax').text
 				obj.findall('shape/points/y')[1].text = obj.find('bndbox/ymax').text
 
-				tree.write(xml_output_path + "/" + image_name + '_' + str(angle) + "_rotate.xml", encoding='utf-8', xml_declaration=True)
+				tree.write(xml_output_path + "/" + image_name + '_' + str(angle_array[angle_idx]) + "_rotate.xml", encoding='utf-8', xml_declaration=True)
 				cv2.rectangle(image_mark, (t_xmin, t_ymin), (t_xmax, t_ymax), color_type, 5)
-				cv2.imwrite(image_output_path + "/" + image_name + '_' + str(angle)  + "_rotate_MARKED.jpg", image_mark)
+				cv2.imwrite(image_output_path + "/" + image_name + '_' + str(angle_array[angle_idx])  + "_rotate_MARKED.jpg", image_mark)
 				if 0:
 					#cv2.rectangle(image_mark, (xmin, ymin), (xmax, ymax), (1, 1, 255), 5)
 					#cv2.rectangle(image_mark, (t_xmin, t_ymin), (t_xmax, t_ymax), (1, 255, 1), 5)
@@ -280,8 +293,8 @@ def augment_rotation(txt_input_path, image_input_path, xml_input_path, txt_outpu
 					#cv2.circle(image_mark, (t_x01, t_y01), 5, (1, 255, 1), -1)
 					#cv2.circle(image_mark, (t_x10, t_y10), 5, (1, 255, 1), -1)
 					#cv2.circle(image_mark, (t_x11, t_y11), 5, (1, 255, 1), -1)				
-					cv2.namedWindow(str(angle), 0)
-					cv2.imshow(str(angle), image_mark)
+					cv2.namedWindow(str(angle_array[angle_idx]), 0)
+					cv2.imshow(str(angle_array[angle_idx]), image_mark)
 					cv2.waitKey(0)
 					cv2.destroyAllWindows()
 					break
@@ -402,7 +415,7 @@ def augment(is_rotate, is_flip, is_crop):
 		pass
 
 if __name__ == "__main__":
-	csvToxml()
+	#csvToxml()
 
 	is_rotate = 1
 	is_flip = 1
