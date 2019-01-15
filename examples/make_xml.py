@@ -366,19 +366,19 @@ def augment_flip(txt_input_path, image_input_path, xml_input_path, txt_output_pa
 				ymax = int(int(obj.find('bndbox/ymax').text) / 1)
 				
 				if -1 == flip:#hv
-					t_xmin = image.shape[1] - 1 - xmin
-					t_ymin = image.shape[0] - 1 - ymin
-					t_xmax = image.shape[1] - 1 - xmax
-					t_ymax = image.shape[0] - 1 - ymax
+					t_xmin = image.shape[1] - 1 - xmax
+					t_ymin = image.shape[0] - 1 - ymax
+					t_xmax = image.shape[1] - 1 - xmin
+					t_ymax = image.shape[0] - 1 - ymin
 				elif 0 == flip:#v
-					t_xmin = xmin
-					t_ymin = image.shape[0] - 1 - ymin
-					t_xmax = xmax
-					t_ymax = image.shape[0] - 1 - ymax
+					t_xmin = xmax 
+					t_ymin = image.shape[1] - 1 - ymax
+					t_xmax = xmin
+					t_ymax = image.shape[1] - 1 - ymin
 				elif 1 == flip:#h
-					t_xmin = image.shape[1] - 1 - xmin
+					t_xmin = image.shape[1] - 1 - xmax 
 					t_ymin = ymin
-					t_xmax = image.shape[1] - 1 - xmax
+					t_xmax = image.shape[1] - 1 - xmin
 					t_ymax = ymax
 					
 				obj.find('bndbox/xmin').text = str(t_xmin)
