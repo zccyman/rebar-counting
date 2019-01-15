@@ -10,6 +10,7 @@ import pandas
 import shutil
 import math
 import numpy as np
+from numba import jit
 import xml.etree.cElementTree as ET
 from xml.etree.ElementTree import Element,ElementTree
 
@@ -19,10 +20,12 @@ ratio = []
 box_w = []
 box_h = []
 
+#@jit
 def if_no_exist_path_and_make_path(path):
     if not os.path.exists(path):
         os.makedirs(path)
 
+#@jit
 def view_bar(num, total):
     rate = float(num) / total
     rate_num = int(rate * 100)+1
@@ -30,6 +33,7 @@ def view_bar(num, total):
     sys.stdout.write(r)
     sys.stdout.flush()
 
+#@jit
 def indent(elem, level=0):
     i = "\n" + level*"\t"
     if len(elem):
@@ -44,7 +48,8 @@ def indent(elem, level=0):
     else:
         if level and (not elem.tail or not elem.tail.strip()):
             elem.tail = i
-			
+
+#@jit			
 def create_xml(image_name, image_size, boxes, xml_output_path):
 	xml_name = image_name.split(".jpg")[0]
 	
@@ -127,6 +132,7 @@ def create_xml(image_name, image_size, boxes, xml_output_path):
 
 	tree.write(xml_output_path + "/" + xml_name + ".xml")
 
+#@jit
 def create_txt(image_name, trainval_dataset, flag):
 	if not os.path.exists(trainval_dataset):
 		os.makedirs(trainval_dataset)
@@ -148,6 +154,7 @@ def create_txt(image_name, trainval_dataset, flag):
 			f.write(image_name.split(".jpg")[0] + "\n")
 			f.close()
 
+#@jit
 def parse_csv(csv_file_name, image_path, xml_output_path, trainval_dataset, flag):
 	df = pandas.read_csv(csv_file_name)
 	#print(df)
@@ -224,15 +231,14 @@ def parse_csv(csv_file_name, image_path, xml_output_path, trainval_dataset, flag
 			image_size = [image.shape[1], image.shape[0], image.shape[2]]
 			boxes.append(df['Detection'][i].split(" ", 4))
 
-def augment_rotation(txt_input_path, image_input_path, xml_input_path, txt_output_path, image_output_path, xml_output_path):
-
+#@jit
+def augment_rotation(angle_idx, angle_array, txt_input_path, image_input_path, xml_input_path, txt_output_path, image_output_path, xml_output_path):
 	angle_sin_array = []
 	angle_cos_array = []
-	angle_array = [-180, -90, -6, -4, -2, 0, 2, 4, 6, 90]
 	for theta_ in angle_array:
 		angle_sin_array.append(math.sin(theta_ * (-np.pi / 180.0)))
 		angle_cos_array.append(math.cos(theta_ * (-np.pi / 180.0)))
-	
+
 	image_id = 0
 	for image_name in open(txt_input_path + "/train.txt"):
 		image_name = image_name.strip('\n')
@@ -244,112 +250,112 @@ def augment_rotation(txt_input_path, image_input_path, xml_input_path, txt_outpu
 		image_id = image_id + 1
 		view_bar(image_id, 250)
 
-		for angle_idx in range(len(angle_array)):
-			print("angle: ", angle_array[angle_idx])
-			M = cv2.getRotationMatrix2D((center_x, center_y), angle_array[angle_idx], 1.0)
-			image_RT = cv2.warpAffine(image, M, (image.shape[1], image.shape[0]))
-			image_mark = image_RT.copy()
-			cv2.imwrite(image_output_path + "/" + image_name + '_' + str(angle_array[angle_idx]) + '_rotate.jpg', image_RT)
+		M = cv2.getRotationMatrix2D((center_x, center_y), angle_array[angle_idx], 1.0)
+		image_RT = cv2.warpAffine(image, M, (image.shape[1], image.shape[0]))
+		image_mark = image_RT.copy()
+		cv2.imwrite(image_output_path + "/" + image_name + '_' + str(angle_array[angle_idx]) + '_rotate.jpg', image_RT)
 
-			shutil.copyfile(xml_input_path + "/" + image_name + ".xml", xml_output_path + "/" + image_name + '_' + str(angle_array[angle_idx]) + "_rotate.xml")
+		shutil.copyfile(xml_input_path + "/" + image_name + ".xml", xml_output_path + "/" + image_name + '_' + str(angle_array[angle_idx]) + "_rotate.xml")
 
-			print(xml_output_path + "/" + image_name + '_' + str(angle_array[angle_idx]) + "_rotate.xml")
-			tree = ET.parse(xml_output_path + "/" + image_name + '_' + str(angle_array[angle_idx]) + "_rotate.xml")
-			root = tree.getroot()
-			root.find('filename').text = image_name + '_' + str(angle_array[angle_idx]) + '_rotate.jpg'
+		print(xml_output_path + "/" + image_name + '_' + str(angle_array[angle_idx]) + "_rotate.xml")
+		tree = ET.parse(xml_output_path + "/" + image_name + '_' + str(angle_array[angle_idx]) + "_rotate.xml")
+		root = tree.getroot()
+		root.find('filename').text = image_name + '_' + str(angle_array[angle_idx]) + '_rotate.jpg'
 
-			for obj in root.findall('object'):
-				def rotate_point(x0, y0, center_x, center_y, theta, idx):
-					#pi = 3.1415926535897932384626433832795
-					#theta = - theta * pi / 180.0
-					#x = (x0 - center_x) * math.cos(theta) - (y0 - center_y) * math.sin(theta) + center_x
-					#y = (x0 - center_x) * math.sin(theta) + (y0 - center_y) * math.cos(theta) + center_y
-					
-					delta_x = (x0 - center_x)
-					delta_y = (y0 - center_y)
-					x = delta_x * angle_cos_array[idx] - delta_y * angle_sin_array[idx] + center_x
-					y = delta_x * angle_sin_array[idx] + delta_y * angle_cos_array[idx] + center_y
-					
-					x = math.floor(x)
-					y = math.floor(y)
-
-					if x >= (image.shape[1] - 1): x = image.shape[1] - 1
-					elif x < 0: x = 0
-					
-					if y >= (image.shape[0] - 1): y = image.shape[0] - 1
-					elif y < 0: y = 0
-
-					return x, y
-
-				shape_color_type = obj.find('shape').get('color')
-				color_type = (1, 1, 255)
-				if 'Red' == shape_color_type:
-					color_type = (1, 1, 255)
-				elif 'Green' == shape_color_type:
-					color_type = (1, 255, 1)
-
-				xmin = int(int(obj.find('bndbox/xmin').text) / 1)
-				ymin = int(int(obj.find('bndbox/ymin').text) / 1)
-				xmax = int(int(obj.find('bndbox/xmax').text) / 1)
-				ymax = int(int(obj.find('bndbox/ymax').text) / 1)
-
-				x00 = xmin
-				y00 = ymin
-
-				x11 = xmax
-				y11 = ymax
-
-				#x01 = x11
-				#y01 = y00
-
-				#x10 = x00
-				#y10 = y11
-
-				t_x00, t_y00 = rotate_point(x00, y00, center_x, center_y, angle_array[angle_idx], angle_idx)
-				t_x11, t_y11 = rotate_point(x11, y11, center_x, center_y, angle_array[angle_idx], angle_idx)
-				t_x01, t_y01 = (t_x11, t_y00)#rotate_point(x01, y01, center_x, center_y, angle_array[angle_idx], angle_idx)
-				t_x10, t_y10 = (t_x00, t_y11)#rotate_point(x10, y10, center_x, center_y, angle_array[angle_idx], angle_idx)
-
-
-				t_xarray = [t_x00, t_x01, t_x10, t_x11]
-				t_yarray = [t_y00, t_y01, t_y10, t_y11]
+		for obj in root.findall('object'):
+			def rotate_point(x0, y0, center_x, center_y, theta, idx):
+				#pi = 3.1415926535897932384626433832795
+				#theta = - theta * pi / 180.0
+				#x = (x0 - center_x) * math.cos(theta) - (y0 - center_y) * math.sin(theta) + center_x
+				#y = (x0 - center_x) * math.sin(theta) + (y0 - center_y) * math.cos(theta) + center_y
 				
-				t_xmin = min(t_xarray)
-				t_ymin = min(t_yarray)
-				t_xmax = max(t_xarray)
-				t_ymax = max(t_yarray)
+				delta_x = (x0 - center_x)
+				delta_y = (y0 - center_y)
+				x = delta_x * angle_cos_array[idx] - delta_y * angle_sin_array[idx] + center_x
+				y = delta_x * angle_sin_array[idx] + delta_y * angle_cos_array[idx] + center_y
+				
+				x = math.floor(x)
+				y = math.floor(y)
 
-				obj.find('bndbox/xmin').text = str(t_xmin)
-				obj.find('bndbox/ymin').text = str(t_ymin)
-				obj.find('bndbox/xmax').text = str(t_xmax)
-				obj.find('bndbox/ymax').text = str(t_ymax)
+				if x >= (image.shape[1] - 1): x = image.shape[1] - 1
+				elif x < 0: x = 0
+				
+				if y >= (image.shape[0] - 1): y = image.shape[0] - 1
+				elif y < 0: y = 0
 
-				obj.findall('shape/points/x')[0].text = obj.find('bndbox/xmin').text
-				obj.findall('shape/points/y')[0].text = obj.find('bndbox/ymin').text
-				obj.findall('shape/points/x')[1].text = obj.find('bndbox/xmax').text
-				obj.findall('shape/points/y')[1].text = obj.find('bndbox/ymax').text
+				return x, y
 
-				tree.write(xml_output_path + "/" + image_name + '_' + str(angle_array[angle_idx]) + "_rotate.xml", encoding='utf-8', xml_declaration=True)
-				cv2.rectangle(image_mark, (t_xmin, t_ymin), (t_xmax, t_ymax), color_type, 5)
-				cv2.circle(image_mark, (t_xmin, t_ymin), 5, (255, 1, 1), -1) #Blue
-				cv2.circle(image_mark, (t_xmax, t_ymax), 5, (1, 255, 1), -1) #Green
-				cv2.imwrite(image_output_path + "/" + image_name + '_' + str(angle_array[angle_idx])  + "_rotate_MARKED.jpg", image_mark)
-				if 0:
-					#cv2.rectangle(image_mark, (xmin, ymin), (xmax, ymax), (1, 1, 255), 5)
-					#cv2.rectangle(image_mark, (t_xmin, t_ymin), (t_xmax, t_ymax), (1, 255, 1), 5)
-					#cv2.circle(image_mark, (t_xmin, t_ymin), 5, (1, 255, 1), -1)
-					#cv2.circle(image_mark, (t_xmax, t_ymax), 5, (1, 255, 1), -1)
-					#cv2.circle(image_mark, (t_x00, t_y00), 5, (255, 1, 1), -1)
-					#cv2.circle(image_mark, (t_x01, t_y01), 5, (1, 255, 1), -1)
-					#cv2.circle(image_mark, (t_x10, t_y10), 5, (1, 255, 1), -1)
-					#cv2.circle(image_mark, (t_x11, t_y11), 5, (1, 255, 1), -1)				
-					cv2.namedWindow(str(angle_array[angle_idx]), 0)
-					cv2.imshow(str(angle_array[angle_idx]), image_mark)
-					cv2.waitKey(0)
-					cv2.destroyAllWindows()
-		#break
+			shape_color_type = obj.find('shape').get('color')
+			color_type = (1, 1, 255)
+			if 'Red' == shape_color_type:
+				color_type = (1, 1, 255)
+			elif 'Green' == shape_color_type:
+				color_type = (1, 255, 1)
 
-def augment_flip(txt_input_path, image_input_path, xml_input_path, txt_output_path, image_output_path, xml_output_path):
+			xmin = int(int(obj.find('bndbox/xmin').text) / 1)
+			ymin = int(int(obj.find('bndbox/ymin').text) / 1)
+			xmax = int(int(obj.find('bndbox/xmax').text) / 1)
+			ymax = int(int(obj.find('bndbox/ymax').text) / 1)
+
+			x00 = xmin
+			y00 = ymin
+
+			x11 = xmax
+			y11 = ymax
+
+			#x01 = x11
+			#y01 = y00
+
+			#x10 = x00
+			#y10 = y11
+
+			t_x00, t_y00 = rotate_point(x00, y00, center_x, center_y, angle_array[angle_idx], angle_idx)
+			t_x11, t_y11 = rotate_point(x11, y11, center_x, center_y, angle_array[angle_idx], angle_idx)
+			t_x01, t_y01 = (t_x11, t_y00)#rotate_point(x01, y01, center_x, center_y, angle_array[angle_idx], angle_idx)
+			t_x10, t_y10 = (t_x00, t_y11)#rotate_point(x10, y10, center_x, center_y, angle_array[angle_idx], angle_idx)
+
+
+			t_xarray = [t_x00, t_x01, t_x10, t_x11]
+			t_yarray = [t_y00, t_y01, t_y10, t_y11]
+			
+			t_xmin = min(t_xarray)
+			t_ymin = min(t_yarray)
+			t_xmax = max(t_xarray)
+			t_ymax = max(t_yarray)
+
+			obj.find('bndbox/xmin').text = str(t_xmin)
+			obj.find('bndbox/ymin').text = str(t_ymin)
+			obj.find('bndbox/xmax').text = str(t_xmax)
+			obj.find('bndbox/ymax').text = str(t_ymax)
+
+			obj.findall('shape/points/x')[0].text = obj.find('bndbox/xmin').text
+			obj.findall('shape/points/y')[0].text = obj.find('bndbox/ymin').text
+			obj.findall('shape/points/x')[1].text = obj.find('bndbox/xmax').text
+			obj.findall('shape/points/y')[1].text = obj.find('bndbox/ymax').text
+
+			tree.write(xml_output_path + "/" + image_name + '_' + str(angle_array[angle_idx]) + "_rotate.xml", encoding='utf-8', xml_declaration=True)
+			cv2.rectangle(image_mark, (t_xmin, t_ymin), (t_xmax, t_ymax), color_type, 5)
+			cv2.circle(image_mark, (t_xmin, t_ymin), 5, (255, 1, 1), -1) #Blue
+			cv2.circle(image_mark, (t_xmax, t_ymax), 5, (1, 255, 1), -1) #Green
+			cv2.imwrite(image_output_path + "/" + image_name + '_' + str(angle_array[angle_idx])  + "_rotate_MARKED.jpg", image_mark)
+			if 0:
+				#cv2.rectangle(image_mark, (xmin, ymin), (xmax, ymax), (1, 1, 255), 5)
+				#cv2.rectangle(image_mark, (t_xmin, t_ymin), (t_xmax, t_ymax), (1, 255, 1), 5)
+				#cv2.circle(image_mark, (t_xmin, t_ymin), 5, (1, 255, 1), -1)
+				#cv2.circle(image_mark, (t_xmax, t_ymax), 5, (1, 255, 1), -1)
+				#cv2.circle(image_mark, (t_x00, t_y00), 5, (255, 1, 1), -1)
+				#cv2.circle(image_mark, (t_x01, t_y01), 5, (1, 255, 1), -1)
+				#cv2.circle(image_mark, (t_x10, t_y10), 5, (1, 255, 1), -1)
+				#cv2.circle(image_mark, (t_x11, t_y11), 5, (1, 255, 1), -1)				
+				cv2.namedWindow(str(angle_array[angle_idx]), 0)
+				cv2.imshow(str(angle_array[angle_idx]), image_mark)
+				cv2.waitKey(0)
+				cv2.destroyAllWindows()
+	#break
+
+#@jit
+def augment_flip(flip, txt_input_path, image_input_path, xml_input_path, txt_output_path, image_output_path, xml_output_path):
+
 	image_id = 0
 	for image_name in open(txt_input_path + "/train.txt"):
 		image_name = image_name.strip('\n')
@@ -359,73 +365,71 @@ def augment_flip(txt_input_path, image_input_path, xml_input_path, txt_output_pa
 		image_id = image_id + 1
 		view_bar(image_id, 250)
 
-		flip_array = [-1, 0, 1]
-		for flip in flip_array:
-			print("flip: ", flip)
-			image_flip = cv2.flip(image, flip)
-			image_mark = image_flip.copy()
-			cv2.imwrite(image_output_path + "/" + image_name + '_' + str(flip) + '_flip.jpg', image_flip)
+		image_flip = cv2.flip(image, flip)
+		image_mark = image_flip.copy()
+		cv2.imwrite(image_output_path + "/" + image_name + '_' + str(flip) + '_flip.jpg', image_flip)
 
-			shutil.copyfile(xml_input_path + "/" + image_name + ".xml", xml_output_path + "/" + image_name + '_' + str(flip) + "_flip.xml")
+		shutil.copyfile(xml_input_path + "/" + image_name + ".xml", xml_output_path + "/" + image_name + '_' + str(flip) + "_flip.xml")
 
-			print(xml_output_path + "/" + image_name + '_' + str(flip) + "_flip.xml")
-			tree = ET.parse(xml_output_path + "/" + image_name + '_' + str(flip) + "_flip.xml")
-			root = tree.getroot()
-			root.find('filename').text = image_name + '_' + str(flip) + '_flip.jpg'
+		print(xml_output_path + "/" + image_name + '_' + str(flip) + "_flip.xml")
+		tree = ET.parse(xml_output_path + "/" + image_name + '_' + str(flip) + "_flip.xml")
+		root = tree.getroot()
+		root.find('filename').text = image_name + '_' + str(flip) + '_flip.jpg'
 
-			for obj in root.findall('object'):
-				shape_color_type = obj.find('shape').get('color')
+		for obj in root.findall('object'):
+			shape_color_type = obj.find('shape').get('color')
+			color_type = (1, 1, 255)
+			if 'Red' == shape_color_type:
 				color_type = (1, 1, 255)
-				if 'Red' == shape_color_type:
-					color_type = (1, 1, 255)
-				elif 'Green' == shape_color_type:
-					color_type = (1, 255, 1)
+			elif 'Green' == shape_color_type:
+				color_type = (1, 255, 1)
 
-				xmin = int(int(obj.find('bndbox/xmin').text) / 1)
-				ymin = int(int(obj.find('bndbox/ymin').text) / 1)
-				xmax = int(int(obj.find('bndbox/xmax').text) / 1)
-				ymax = int(int(obj.find('bndbox/ymax').text) / 1)
+			xmin = int(int(obj.find('bndbox/xmin').text) / 1)
+			ymin = int(int(obj.find('bndbox/ymin').text) / 1)
+			xmax = int(int(obj.find('bndbox/xmax').text) / 1)
+			ymax = int(int(obj.find('bndbox/ymax').text) / 1)
+			
+			if -1 == flip:#hv
+				t_xmin = image.shape[1] - 1 - xmax
+				t_ymin = image.shape[0] - 1 - ymax
+				t_xmax = image.shape[1] - 1 - xmin
+				t_ymax = image.shape[0] - 1 - ymin
+			elif 0 == flip:#v
+				t_xmin = xmin 
+				t_ymin = image.shape[0] - 1 - ymax
+				t_xmax = xmax
+				t_ymax = image.shape[0] - 1 - ymin
+			elif 1 == flip:#h
+				t_xmin = image.shape[1] - 1 - xmax 
+				t_ymin = ymin
+				t_xmax = image.shape[1] - 1 - xmin
+				t_ymax = ymax
 				
-				if -1 == flip:#hv
-					t_xmin = image.shape[1] - 1 - xmax
-					t_ymin = image.shape[0] - 1 - ymax
-					t_xmax = image.shape[1] - 1 - xmin
-					t_ymax = image.shape[0] - 1 - ymin
-				elif 0 == flip:#v
-					t_xmin = xmin 
-					t_ymin = image.shape[0] - 1 - ymax
-					t_xmax = xmax
-					t_ymax = image.shape[0] - 1 - ymin
-				elif 1 == flip:#h
-					t_xmin = image.shape[1] - 1 - xmax 
-					t_ymin = ymin
-					t_xmax = image.shape[1] - 1 - xmin
-					t_ymax = ymax
-					
-				obj.find('bndbox/xmin').text = str(t_xmin)
-				obj.find('bndbox/ymin').text = str(t_ymin)
-				obj.find('bndbox/xmax').text = str(t_xmax)
-				obj.find('bndbox/ymax').text = str(t_ymax)
+			obj.find('bndbox/xmin').text = str(t_xmin)
+			obj.find('bndbox/ymin').text = str(t_ymin)
+			obj.find('bndbox/xmax').text = str(t_xmax)
+			obj.find('bndbox/ymax').text = str(t_ymax)
 
-				obj.findall('shape/points/x')[0].text = obj.find('bndbox/xmin').text
-				obj.findall('shape/points/y')[0].text = obj.find('bndbox/ymin').text
-				obj.findall('shape/points/x')[1].text = obj.find('bndbox/xmax').text
-				obj.findall('shape/points/y')[1].text = obj.find('bndbox/ymax').text
+			obj.findall('shape/points/x')[0].text = obj.find('bndbox/xmin').text
+			obj.findall('shape/points/y')[0].text = obj.find('bndbox/ymin').text
+			obj.findall('shape/points/x')[1].text = obj.find('bndbox/xmax').text
+			obj.findall('shape/points/y')[1].text = obj.find('bndbox/ymax').text
 
-				tree.write(xml_output_path + "/" + image_name + '_' + str(flip) + "_flip.xml", encoding='utf-8', xml_declaration=True)
-				cv2.rectangle(image_mark, (t_xmin, t_ymin), (t_xmax, t_ymax), color_type, 5)
-				cv2.circle(image_mark, (t_xmin, t_ymin), 5, (255, 1, 1), -1) #Blue
-				cv2.circle(image_mark, (t_xmax, t_ymax), 5, (1, 255, 1), -1) #Green
-				cv2.imwrite(image_output_path + "/" + image_name + '_' + str(flip)  + "_flip_MARKED.jpg", image_mark)
-				if 0:
-					#cv2.rectangle(image_mark, (xmin, ymin), (xmax, ymax), (1, 1, 255), 5)
-					cv2.rectangle(image_mark, (t_xmin, t_ymin), (t_xmax, t_ymax), (1, 255, 1), 5)			
-					cv2.namedWindow(str(flip), 0)
-					cv2.imshow(str(flip), image_mark)
-					cv2.waitKey(0)
-					cv2.destroyAllWindows()
-		#break
+			tree.write(xml_output_path + "/" + image_name + '_' + str(flip) + "_flip.xml", encoding='utf-8', xml_declaration=True)
+			cv2.rectangle(image_mark, (t_xmin, t_ymin), (t_xmax, t_ymax), color_type, 5)
+			cv2.circle(image_mark, (t_xmin, t_ymin), 5, (255, 1, 1), -1) #Blue
+			cv2.circle(image_mark, (t_xmax, t_ymax), 5, (1, 255, 1), -1) #Green
+			cv2.imwrite(image_output_path + "/" + image_name + '_' + str(flip)  + "_flip_MARKED.jpg", image_mark)
+			if 0:
+				#cv2.rectangle(image_mark, (xmin, ymin), (xmax, ymax), (1, 1, 255), 5)
+				cv2.rectangle(image_mark, (t_xmin, t_ymin), (t_xmax, t_ymax), (1, 255, 1), 5)			
+				cv2.namedWindow(str(flip), 0)
+				cv2.imshow(str(flip), image_mark)
+				cv2.waitKey(0)
+				cv2.destroyAllWindows()
+	#break
 
+#@jit
 def csvToxml():
 	train_csv_file_name = "train_labels.csv"
 	test_csv_file_name = "submit_example.csv"
@@ -441,32 +445,39 @@ def csvToxml():
 	parse_csv(train_csv_file_name, image_path, xml_output_path, trainval_dataset, 1)
 	#parse_csv(test_csv_file_name, image_path, xml_output_path, trainval_dataset, 0)
 
+#@jit
 def augment(is_rotate, is_flip, is_crop):
 	txt_input_path = "data/VOCdevkit2007/VOC2007_origin/ImageSets/Main"
 	image_input_path = "data/VOCdevkit2007/VOC2007_origin/JPEGImages"
 	xml_input_path = "data/VOCdevkit2007/VOC2007_origin/Annotations"
 
 	if is_rotate:
-		txt_output_path = "data/VOCdevkit2007/VOC2007_rotation/ImageSets/Main"
-		image_output_path = "data/VOCdevkit2007/VOC2007_rotation/JPEGImages"
-		xml_output_path = "data/VOCdevkit2007/VOC2007_rotation/Annotations"
-		
-		if_no_exist_path_and_make_path(txt_output_path)
-		if_no_exist_path_and_make_path(image_output_path)
-		if_no_exist_path_and_make_path(xml_output_path)
+		angle_array = [-180, -90, -6, -4, -2, 0, 2, 4, 6, 90]
+		for angle_idx in range(0, len(angle_array)):
+			txt_output_path = "data/VOCdevkit2007/" + "VOC2007_rotation_" + str(angle_array[angle_idx]) +"/ImageSets/Main"
+			image_output_path = "data/VOCdevkit2007/" + "VOC2007_rotation_" + str(angle_array[angle_idx]) +"/JPEGImages"
+			xml_output_path = "data/VOCdevkit2007/" + "VOC2007_rotation_" + str(angle_array[angle_idx]) +"/Annotations"
+			
+			if_no_exist_path_and_make_path(txt_output_path)
+			if_no_exist_path_and_make_path(image_output_path)
+			if_no_exist_path_and_make_path(xml_output_path)
 
-		augment_rotation(txt_input_path, image_input_path, xml_input_path, txt_output_path, image_output_path, xml_output_path)
+			augment_rotation(angle_idx, angle_array, txt_input_path, image_input_path, xml_input_path, txt_output_path, image_output_path, xml_output_path)
 
 	if is_flip:
-		txt_output_path = "data/VOCdevkit2007/VOC2007_flip/ImageSets/Main"
-		image_output_path = "data/VOCdevkit2007/VOC2007_flip/JPEGImages"
-		xml_output_path = "data/VOCdevkit2007/VOC2007_flip/Annotations"
-		
-		if_no_exist_path_and_make_path(txt_output_path)
-		if_no_exist_path_and_make_path(image_output_path)
-		if_no_exist_path_and_make_path(xml_output_path)
+		flip_array = [-1, 0, 1]
+		for flip in flip_array:
+			print("flip: ", flip)
 
-		augment_flip(txt_input_path, image_input_path, xml_input_path, txt_output_path, image_output_path, xml_output_path)
+			txt_output_path = "data/VOCdevkit2007/" + "VOC2007_flip_" + str(flip) +"/ImageSets/Main"
+			image_output_path = "data/VOCdevkit2007/" + "VOC2007_flip_" + str(flip) +"/JPEGImages"
+			xml_output_path = "data/VOCdevkit2007/" + "VOC2007_flip_" + str(flip) +"/Annotations"
+			
+			if_no_exist_path_and_make_path(txt_output_path)
+			if_no_exist_path_and_make_path(image_output_path)
+			if_no_exist_path_and_make_path(xml_output_path)
+
+			augment_flip(flip, txt_input_path, image_input_path, xml_input_path, txt_output_path, image_output_path, xml_output_path)
 
 	if is_crop:
 		pass
@@ -475,7 +486,7 @@ if __name__ == "__main__":
 	#csvToxml()
 
 	is_rotate = 0
-	is_flip = 1
+	is_flip = 0
 	is_crop = 0
 	augment(is_rotate, is_flip, is_crop)
 
