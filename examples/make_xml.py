@@ -3,6 +3,7 @@
 #date:2019/1/11
 
 import os
+import sys
 import cv2
 import csv
 import pandas
@@ -21,6 +22,13 @@ box_h = []
 def if_no_exist_path_and_make_path(path):
     if not os.path.exists(path):
         os.makedirs(path)
+
+def view_bar(num, total):
+    rate = float(num) / total
+    rate_num = int(rate * 100)+1
+    r = '\r[%s%s]%d%%' % ("#"*rate_num, " "*(100-rate_num), rate_num, )
+    sys.stdout.write(r)
+    sys.stdout.flush()
 
 def indent(elem, level=0):
     i = "\n" + level*"\t"
@@ -334,10 +342,14 @@ def augment_rotation(txt_input_path, image_input_path, xml_input_path, txt_outpu
 					break
 
 def augment_flip(txt_input_path, image_input_path, xml_input_path, txt_output_path, image_output_path, xml_output_path):
+	image_id = 0
 	for image_name in open(txt_input_path + "/train.txt"):
 		image_name = image_name.strip('\n')
 		print(image_input_path + "/" + image_name + ".jpg")
 		image = cv2.imread(image_input_path + "/" + image_name + ".jpg", -1)
+
+		image_id = image_id + 1
+		view_bar(image_id, 250)
 
 		for flip in [-1, 0, 1]:
 			print("flip: ", flip)
