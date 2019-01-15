@@ -198,6 +198,8 @@ def parse_csv(csv_file_name, image_path, xml_output_path, trainval_dataset, flag
 				x1 = int(boxes[box_idx][2])
 				y1 = int(boxes[box_idx][3])
 				cv2.rectangle(image_mark, (x0, y0), (x1,y1), (1, 1, 255), 5)
+				cv2.circle(image_mark, (x0, y0), 5, (255, 1, 1), -1) #Blue
+				cv2.circle(image_mark, (x1,y1), 5, (1, 255, 1), -1) #Green
 				cv2.imwrite(image_path + "/" + image_name.split(".jpg")[0] + "_MARKED.jpg", image_mark)
 			if 0:
 				cv2.namedWindow(image_name, 0)
@@ -231,12 +233,16 @@ def augment_rotation(txt_input_path, image_input_path, xml_input_path, txt_outpu
 		angle_sin_array.append(math.sin(theta_ * (-np.pi / 180.0)))
 		angle_cos_array.append(math.cos(theta_ * (-np.pi / 180.0)))
 	
+	image_id = 0
 	for image_name in open(txt_input_path + "/train.txt"):
 		image_name = image_name.strip('\n')
 		print(image_input_path + "/" + image_name + ".jpg")
 		image = cv2.imread(image_input_path + "/" + image_name + ".jpg", -1)
 		center_x = image.shape[1] >> 1
 		center_y = image.shape[0] >> 1
+
+		image_id = image_id + 1
+		view_bar(image_id, 250)
 
 		for angle_idx in range(len(angle_array)):
 			print("angle: ", angle_array[angle_idx])
@@ -325,6 +331,8 @@ def augment_rotation(txt_input_path, image_input_path, xml_input_path, txt_outpu
 
 				tree.write(xml_output_path + "/" + image_name + '_' + str(angle_array[angle_idx]) + "_rotate.xml", encoding='utf-8', xml_declaration=True)
 				cv2.rectangle(image_mark, (t_xmin, t_ymin), (t_xmax, t_ymax), color_type, 5)
+				cv2.circle(image_mark, (t_xmin, t_ymin), 5, (255, 1, 1), -1) #Blue
+				cv2.circle(image_mark, (t_xmax, t_ymax), 5, (1, 255, 1), -1) #Green
 				cv2.imwrite(image_output_path + "/" + image_name + '_' + str(angle_array[angle_idx])  + "_rotate_MARKED.jpg", image_mark)
 				if 0:
 					#cv2.rectangle(image_mark, (xmin, ymin), (xmax, ymax), (1, 1, 255), 5)
@@ -339,7 +347,7 @@ def augment_rotation(txt_input_path, image_input_path, xml_input_path, txt_outpu
 					cv2.imshow(str(angle_array[angle_idx]), image_mark)
 					cv2.waitKey(0)
 					cv2.destroyAllWindows()
-					break
+		#break
 
 def augment_flip(txt_input_path, image_input_path, xml_input_path, txt_output_path, image_output_path, xml_output_path):
 	image_id = 0
@@ -351,7 +359,8 @@ def augment_flip(txt_input_path, image_input_path, xml_input_path, txt_output_pa
 		image_id = image_id + 1
 		view_bar(image_id, 250)
 
-		for flip in [-1, 0, 1]:
+		flip_array = [-1, 0, 1]
+		for flip in flip_array:
 			print("flip: ", flip)
 			image_flip = cv2.flip(image, flip)
 			image_mark = image_flip.copy()
@@ -383,10 +392,10 @@ def augment_flip(txt_input_path, image_input_path, xml_input_path, txt_output_pa
 					t_xmax = image.shape[1] - 1 - xmin
 					t_ymax = image.shape[0] - 1 - ymin
 				elif 0 == flip:#v
-					t_xmin = xmax 
-					t_ymin = image.shape[1] - 1 - ymax
-					t_xmax = xmin
-					t_ymax = image.shape[1] - 1 - ymin
+					t_xmin = xmin 
+					t_ymin = image.shape[0] - 1 - ymax
+					t_xmax = xmax
+					t_ymax = image.shape[0] - 1 - ymin
 				elif 1 == flip:#h
 					t_xmin = image.shape[1] - 1 - xmax 
 					t_ymin = ymin
@@ -405,6 +414,8 @@ def augment_flip(txt_input_path, image_input_path, xml_input_path, txt_output_pa
 
 				tree.write(xml_output_path + "/" + image_name + '_' + str(flip) + "_flip.xml", encoding='utf-8', xml_declaration=True)
 				cv2.rectangle(image_mark, (t_xmin, t_ymin), (t_xmax, t_ymax), color_type, 5)
+				cv2.circle(image_mark, (t_xmin, t_ymin), 5, (255, 1, 1), -1) #Blue
+				cv2.circle(image_mark, (t_xmax, t_ymax), 5, (1, 255, 1), -1) #Green
 				cv2.imwrite(image_output_path + "/" + image_name + '_' + str(flip)  + "_flip_MARKED.jpg", image_mark)
 				if 0:
 					#cv2.rectangle(image_mark, (xmin, ymin), (xmax, ymax), (1, 1, 255), 5)
@@ -413,7 +424,7 @@ def augment_flip(txt_input_path, image_input_path, xml_input_path, txt_output_pa
 					cv2.imshow(str(flip), image_mark)
 					cv2.waitKey(0)
 					cv2.destroyAllWindows()
-					break
+		#break
 
 def csvToxml():
 	train_csv_file_name = "train_labels.csv"
@@ -463,7 +474,7 @@ def augment(is_rotate, is_flip, is_crop):
 if __name__ == "__main__":
 	#csvToxml()
 
-	is_rotate = 1
+	is_rotate = 0
 	is_flip = 1
 	is_crop = 0
 	augment(is_rotate, is_flip, is_crop)
