@@ -246,6 +246,23 @@ def parse_csv(csv_file_name, image_path, xml_output_path, trainval_dataset, flag
 			image_size = [image.shape[1], image.shape[0], image.shape[2]]
 			boxes.append(df['Detection'][i].split(" ", 4))
 
+def rotate_image(mat, angle):
+    height, width = mat.shape[:2]
+    image_center = (width / 2, height / 2)
+    rotation_mat = cv2.getRotationMatrix2D(image_center, angle, 1)
+    radians = math.radians(angle)
+    sin = math.sin(radians)
+    cos = math.cos(radians)
+    bound_w = int((height * abs(sin)) + (width * abs(cos)))
+    bound_h = int((height * abs(cos)) + (width * abs(sin)))
+    shift_w = ((bound_w / 2) - image_center[0])
+    shift_h = ((bound_h / 2) - image_center[1])
+    rotation_mat[0, 2] += shift_w
+    rotation_mat[1, 2] += shift_h
+
+    rotated_mat = cv2.warpAffine(mat, rotation_mat, (bound_w, bound_h))
+    return rotated_mat, shift_w, shift_h
+
 #@jit
 def augment_rotation(angle_idx, angle_array, txt_input_path, image_input_path, xml_input_path, txt_output_path, image_output_path, xml_output_path):
 	angle_sin_array = []
@@ -271,8 +288,7 @@ def augment_rotation(angle_idx, angle_array, txt_input_path, image_input_path, x
 		view_bar(image_id, total_images)
 		image_id = image_id + 1
 
-		M = cv2.getRotationMatrix2D((center_x, center_y), angle_array[angle_idx], 1.0)
-		image_RT = cv2.warpAffine(image, M, (image.shape[1], image.shape[0]))
+		image_RT, bound_w, bound_h = rotate_image(image.copy(), angle_array[angle_idx])
 		image_mark = image_RT.copy()
 		cv2.imwrite(image_output_path + "/" + image_name + '_' + str(angle_array[angle_idx]) + '_rotate.jpg', image_RT)
 
@@ -295,8 +311,8 @@ def augment_rotation(angle_idx, angle_array, txt_input_path, image_input_path, x
 				x = delta_x * angle_cos_array[idx] + delta_y * angle_sin_array[idx] + center_x
 				y = -delta_x * angle_sin_array[idx] + delta_y * angle_cos_array[idx] + center_y
 				
-				x = math.floor(x)
-				y = math.floor(y)
+				x = math.floor(x + bound_w)
+				y = math.floor(y + bound_h)
 
 				if x >= (image.shape[1] - 1): x = image.shape[1] - 1
 				elif x < 0: x = 0
