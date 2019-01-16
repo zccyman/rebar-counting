@@ -20,6 +20,12 @@ do
 cp -rf data/VOCdevkit2007/VOC2007_rotation_${flip_array[k]}/* $TARGET_DIR
 done
 
+crop_array=(0) 
+for ((k=0;k<${crop_array[@]};k++))
+do 
+cp -rf data/VOCdevkit2007/VOC2007_crop_${crop_array[k]}/* $TARGET_DIR
+done
+
 rm -rf data/VOCdevkit2007/VOC2007/ImageSets/Main/*.txt
 
 echo "All done"
