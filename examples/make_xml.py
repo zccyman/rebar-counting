@@ -251,8 +251,8 @@ def augment_rotation(angle_idx, angle_array, txt_input_path, image_input_path, x
 	angle_sin_array = []
 	angle_cos_array = []
 	for theta_ in angle_array:
-		angle_sin_array.append(math.sin(theta_ * (-np.pi / 180.0)))
-		angle_cos_array.append(math.cos(theta_ * (-np.pi / 180.0)))
+		angle_sin_array.append(math.sin(theta_ * (np.pi / 180.0)))
+		angle_cos_array.append(math.cos(theta_ * (np.pi / 180.0)))
 
 	total_images = len(open(txt_input_path + "/train.txt",'rU').readlines())
 
@@ -292,8 +292,8 @@ def augment_rotation(angle_idx, angle_array, txt_input_path, image_input_path, x
 				
 				delta_x = (x0 - center_x)
 				delta_y = (y0 - center_y)
-				x = delta_x * angle_cos_array[idx] - delta_y * angle_sin_array[idx] + center_x
-				y = delta_x * angle_sin_array[idx] + delta_y * angle_cos_array[idx] + center_y
+				x = delta_x * angle_cos_array[idx] + delta_y * angle_sin_array[idx] + center_x
+				y = -delta_x * angle_sin_array[idx] + delta_y * angle_cos_array[idx] + center_y
 				
 				x = math.floor(x)
 				y = math.floor(y)
