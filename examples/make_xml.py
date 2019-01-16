@@ -451,15 +451,20 @@ def augment_crop(crop, txt_input_path, image_input_path, xml_input_path, txt_out
 		image_id = image_id + 1
 		view_bar(image_id, 250)
 
-		random_x = random.randint(-int(image.shape[1] / 10), int(image.shape[1] / 10))
-		random_y = random.randint(-int(image.shape[0] / 10), int(image.shape[0] / 10))
+		crop_ratio = (3 / 4)
+		crop_size_x = int(image.shape[1] * crop_ratio)
+		crop_size_y = int(image.shape[0] * crop_ratio)
+		#print(crop_size_x, crop_size_y)
+
+		random_x = random.randint(-int((image.shape[1] - crop_size_x)  / 10), int((image.shape[1] - crop_size_x) / 10))
+		random_y = random.randint(-int((image.shape[0] - crop_size_y) / 10), int((image.shape[0] - crop_size_y) / 10))
 		center_x = image.shape[1] / 2 + random_x
 		center_y = image.shape[0] / 2 + random_y
 		
-		x0 = int(center_x - image.shape[1] / 4)
-		y0 = int(center_y - image.shape[0] / 4)
-		x1 = int(center_x + image.shape[1] / 4)
-		y1 = int(center_y + image.shape[0] / 4) 
+		x0 = int(center_x - crop_size_x / 2)
+		y0 = int(center_y - crop_size_y / 2)
+		x1 = int(center_x + crop_size_x / 2)
+		y1 = int(center_y + crop_size_y / 2) 
 		image_crop = image[y0:y1, x0:x1]
 						
 		image_mark = image_crop.copy()
@@ -471,6 +476,12 @@ def augment_crop(crop, txt_input_path, image_input_path, xml_input_path, txt_out
 		tree = ET.parse(xml_output_path + "/" + image_name + '_' + str(crop) + "_crop.xml")
 		root = tree.getroot()
 		root.find('filename').text = image_name + '_' + str(crop) + '_crop.jpg'
+
+		#image_size	
+		#print(image_crop.shape[1], image_crop.shape[0], image_crop.shape[2])
+		root.find("size/width").text = str(image_crop.shape[1])
+		root.find("size/height").text = str(image_crop.shape[0])
+		root.find("size/depth").text = str(image_crop.shape[2])
 
 		for obj in root.findall('object'):
 			shape_color_type = obj.find('shape').get('color')
