@@ -240,6 +240,8 @@ def augment_rotation(angle_idx, angle_array, txt_input_path, image_input_path, x
 		angle_sin_array.append(math.sin(theta_ * (-np.pi / 180.0)))
 		angle_cos_array.append(math.cos(theta_ * (-np.pi / 180.0)))
 
+	total_images = len(open(txt_input_path + "/train.txt",'rU').readlines())
+
 	image_id = 0
 	for image_name in open(txt_input_path + "/train.txt"):
 		image_name = image_name.strip('\n')
@@ -252,8 +254,8 @@ def augment_rotation(angle_idx, angle_array, txt_input_path, image_input_path, x
 		center_x = image.shape[1] >> 1
 		center_y = image.shape[0] >> 1
 
+		view_bar(image_id, total_images)
 		image_id = image_id + 1
-		view_bar(image_id, 250)
 
 		M = cv2.getRotationMatrix2D((center_x, center_y), angle_array[angle_idx], 1.0)
 		image_RT = cv2.warpAffine(image, M, (image.shape[1], image.shape[0]))
@@ -360,6 +362,8 @@ def augment_rotation(angle_idx, angle_array, txt_input_path, image_input_path, x
 
 #@jit
 def augment_flip(flip, txt_input_path, image_input_path, xml_input_path, txt_output_path, image_output_path, xml_output_path):
+			
+	total_images = len(open(txt_input_path + "/train.txt",'rU').readlines())
 
 	image_id = 0
 	for image_name in open(txt_input_path + "/train.txt"):
@@ -370,9 +374,9 @@ def augment_flip(flip, txt_input_path, image_input_path, xml_input_path, txt_out
 			print("image is NULL...")
 			continue
 
+		view_bar(image_id, total_images)
 		image_id = image_id + 1
-		view_bar(image_id, 250)
-
+		
 		image_flip = cv2.flip(image, flip)
 		image_mark = image_flip.copy()
 		cv2.imwrite(image_output_path + "/" + image_name + '_' + str(flip) + '_flip.jpg', image_flip)
@@ -439,6 +443,8 @@ def augment_flip(flip, txt_input_path, image_input_path, xml_input_path, txt_out
 #@jit
 def augment_crop(crop, txt_input_path, image_input_path, xml_input_path, txt_output_path, image_output_path, xml_output_path):
 
+	total_images = len(open(txt_input_path + "/train.txt",'rU').readlines())
+
 	image_id = 0
 	for image_name in open(txt_input_path + "/train.txt"):
 		image_name = image_name.strip('\n')
@@ -448,8 +454,8 @@ def augment_crop(crop, txt_input_path, image_input_path, xml_input_path, txt_out
 			print("image is NULL...")
 			continue
 
+		view_bar(image_id, total_images)
 		image_id = image_id + 1
-		view_bar(image_id, 250)
 
 		crop_ratio = (3 / 4)
 		crop_size_x = int(image.shape[1] * crop_ratio)
