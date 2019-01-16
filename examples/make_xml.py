@@ -6,6 +6,7 @@ import os
 import sys
 import cv2
 import csv
+import random
 import pandas
 import shutil
 import math
@@ -244,6 +245,10 @@ def augment_rotation(angle_idx, angle_array, txt_input_path, image_input_path, x
 		image_name = image_name.strip('\n')
 		print(image_input_path + "/" + image_name + ".jpg")
 		image = cv2.imread(image_input_path + "/" + image_name + ".jpg", -1)
+		if image is None:
+			print("image is NULL...")
+			continue
+
 		center_x = image.shape[1] >> 1
 		center_y = image.shape[0] >> 1
 
@@ -361,6 +366,9 @@ def augment_flip(flip, txt_input_path, image_input_path, xml_input_path, txt_out
 		image_name = image_name.strip('\n')
 		print(image_input_path + "/" + image_name + ".jpg")
 		image = cv2.imread(image_input_path + "/" + image_name + ".jpg", -1)
+		if image is None:
+			print("image is NULL...")
+			continue
 
 		image_id = image_id + 1
 		view_bar(image_id, 250)
@@ -428,7 +436,99 @@ def augment_flip(flip, txt_input_path, image_input_path, xml_input_path, txt_out
 				cv2.waitKey(0)
 				cv2.destroyAllWindows()
 	#break
+#@jit
+def augment_crop(crop, txt_input_path, image_input_path, xml_input_path, txt_output_path, image_output_path, xml_output_path):
 
+	image_id = 0
+	for image_name in open(txt_input_path + "/train.txt"):
+		image_name = image_name.strip('\n')
+		print(image_input_path + "/" + image_name + ".jpg")
+		image = cv2.imread(image_input_path + "/" + image_name + ".jpg", -1)
+		if image is None:
+			print("image is NULL...")
+			continue
+
+		image_id = image_id + 1
+		view_bar(image_id, 250)
+
+		random_x = random.randint(-int(image.shape[1] / 10), int(image.shape[1] / 10))
+		random_y = random.randint(-int(image.shape[0] / 10), int(image.shape[0] / 10))
+		print(random_x, random_y)
+		center_x = image.shape[1] / 2 + random_x
+		center_y = image.shape[0] / 2 + random_y
+		
+		x0 = int(center_x - image.shape[1] / 4)
+		y0 = int(center_y - image.shape[0] / 4)
+		x1 = int(center_x + image.shape[1] / 4)
+		y1 = int(center_y + image.shape[0] / 4) 
+		image_crop = image[y0:y1, x0:x1]
+						
+		image_mark = image_crop.copy()
+		cv2.imwrite(image_output_path + "/" + image_name + '_' + str(crop) + '_crop.jpg', image_crop)
+
+		shutil.copyfile(xml_input_path + "/" + image_name + ".xml", xml_output_path + "/" + image_name + '_' + str(crop) + "_crop.xml")
+
+		print(xml_output_path + "/" + image_name + '_' + str(crop) + "_crop.xml")
+		tree = ET.parse(xml_output_path + "/" + image_name + '_' + str(crop) + "_crop.xml")
+		root = tree.getroot()
+		root.find('filename').text = image_name + '_' + str(crop) + '_crop.jpg'
+
+		for obj in root.findall('object'):
+			shape_color_type = obj.find('shape').get('color')
+			color_type = (1, 1, 255)
+			if 'Red' == shape_color_type:
+				color_type = (1, 1, 255)
+			elif 'Green' == shape_color_type:
+				color_type = (1, 255, 1)
+
+			xmin_ = int(int(obj.find('bndbox/xmin').text) / 1)
+			ymin_ = int(int(obj.find('bndbox/ymin').text) / 1)
+			xmax_ = int(int(obj.find('bndbox/xmax').text) / 1)
+			ymax_ = int(int(obj.find('bndbox/ymax').text) / 1)
+			area_orin = (ymax_ - ymin_) * (xmax_ - xmin_)
+
+			xmin = int(int(obj.find('bndbox/xmin').text) / 1) - x0
+			ymin = int(int(obj.find('bndbox/ymin').text) / 1) - y0
+			xmax = int(int(obj.find('bndbox/xmax').text) / 1) - x0
+			ymax = int(int(obj.find('bndbox/ymax').text) / 1) - y0
+			
+			if xmin < 0: xmin = 0
+			if ymin < 0: ymin = 0
+			if xmax > image_crop.shape[1] - 1: xmax = image_crop.shape[1] - 1
+			if ymax > image_crop.shape[0] - 1: ymax = image_crop.shape[0] - 1
+			area = (ymax - ymin) * (xmax - xmin)
+
+			if xmax < 0 or ymax < 0 or xmin > (image_crop.shape[1] - 1) or ymin > (image_crop.shape[0] - 1) or area < 0.5 * area_orin:
+				xmin = 0
+				ymin = 0
+				xmax = 4
+				ymax = 4
+
+			print(xmin, ymin, xmax, ymax)
+
+			obj.find('bndbox/xmin').text = str(xmin)
+			obj.find('bndbox/ymin').text = str(ymin)
+			obj.find('bndbox/xmax').text = str(xmax)
+			obj.find('bndbox/ymax').text = str(ymax)
+
+			obj.findall('shape/points/x')[0].text = obj.find('bndbox/xmin').text
+			obj.findall('shape/points/y')[0].text = obj.find('bndbox/ymin').text
+			obj.findall('shape/points/x')[1].text = obj.find('bndbox/xmax').text
+			obj.findall('shape/points/y')[1].text = obj.find('bndbox/ymax').text
+
+			tree.write(xml_output_path + "/" + image_name + '_' + str(crop) + "_crop.xml", encoding='utf-8', xml_declaration=True)
+			cv2.rectangle(image_mark, (xmin, ymin), (xmax, ymax), color_type, 5)
+			cv2.circle(image_mark, (xmin, ymin), 5, (255, 1, 1), -1) #Blue
+			cv2.circle(image_mark, (xmax, ymax), 5, (1, 255, 1), -1) #Green
+			cv2.imwrite(image_output_path + "/" + image_name + '_' + str(crop)  + "_crop_MARKED.jpg", image_mark)
+			if 0:
+				cv2.rectangle(image_mark, (xmin, ymin), (xmax, ymax), (1, 255, 1), 5)			
+				cv2.namedWindow(str(crop), 0)
+				cv2.imshow(str(crop), image_mark)
+				cv2.waitKey(0)
+				cv2.destroyAllWindows()
+		#break
+	
 #@jit
 def csvToxml():
 	train_csv_file_name = "train_labels.csv"
@@ -452,11 +552,11 @@ def augment(is_rotate, is_flip, is_crop):
 	xml_input_path = "data/VOCdevkit2007/VOC2007_origin/Annotations"
 
 	if is_rotate:
-		angle_array = [-180, -90, -6, -4, -2, 0, 2, 4, 6, 90]
+		angle_array = [-90, -6, -4, -2, 0, 2, 4, 6, 90]
 		for angle_idx in range(0, len(angle_array)):
-			txt_output_path = "data/VOCdevkit2007/" + "VOC2007_rotation_" + str(angle_array[angle_idx]) +"/ImageSets/Main"
-			image_output_path = "data/VOCdevkit2007/" + "VOC2007_rotation_" + str(angle_array[angle_idx]) +"/JPEGImages"
-			xml_output_path = "data/VOCdevkit2007/" + "VOC2007_rotation_" + str(angle_array[angle_idx]) +"/Annotations"
+			txt_output_path = "data/VOCdevkit2007/" + "VOC2007_rotation_" + str(angle_array[angle_idx]) + "/ImageSets/Main"
+			image_output_path = "data/VOCdevkit2007/" + "VOC2007_rotation_" + str(angle_array[angle_idx]) + "/JPEGImages"
+			xml_output_path = "data/VOCdevkit2007/" + "VOC2007_rotation_" + str(angle_array[angle_idx]) + "/Annotations"
 			
 			if_no_exist_path_and_make_path(txt_output_path)
 			if_no_exist_path_and_make_path(image_output_path)
@@ -469,9 +569,9 @@ def augment(is_rotate, is_flip, is_crop):
 		for flip in flip_array:
 			print("flip: ", flip)
 
-			txt_output_path = "data/VOCdevkit2007/" + "VOC2007_flip_" + str(flip) +"/ImageSets/Main"
-			image_output_path = "data/VOCdevkit2007/" + "VOC2007_flip_" + str(flip) +"/JPEGImages"
-			xml_output_path = "data/VOCdevkit2007/" + "VOC2007_flip_" + str(flip) +"/Annotations"
+			txt_output_path = "data/VOCdevkit2007/" + "VOC2007_flip_" + str(flip) + "/ImageSets/Main"
+			image_output_path = "data/VOCdevkit2007/" + "VOC2007_flip_" + str(flip) + "/JPEGImages"
+			xml_output_path = "data/VOCdevkit2007/" + "VOC2007_flip_" + str(flip) + "/Annotations"
 			
 			if_no_exist_path_and_make_path(txt_output_path)
 			if_no_exist_path_and_make_path(image_output_path)
@@ -480,7 +580,18 @@ def augment(is_rotate, is_flip, is_crop):
 			augment_flip(flip, txt_input_path, image_input_path, xml_input_path, txt_output_path, image_output_path, xml_output_path)
 
 	if is_crop:
-		pass
+		for crop in range(0, 1):
+			print("crop: ", crop)
+
+			txt_output_path = "data/VOCdevkit2007/" + "VOC2007_crop"+ "/ImageSets/Main"
+			image_output_path = "data/VOCdevkit2007/" + "VOC2007_crop" + "/JPEGImages"
+			xml_output_path = "data/VOCdevkit2007/" + "VOC2007_crop" + "/Annotations"
+			
+			if_no_exist_path_and_make_path(txt_output_path)
+			if_no_exist_path_and_make_path(image_output_path)
+			if_no_exist_path_and_make_path(xml_output_path)
+
+			augment_crop(crop, txt_input_path, image_input_path, xml_input_path, txt_output_path, image_output_path, xml_output_path)
 
 if __name__ == "__main__":
 	#csvToxml()
