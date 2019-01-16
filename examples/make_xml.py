@@ -218,10 +218,11 @@ def parse_csv(csv_file_name, image_path, xml_output_path, trainval_dataset, flag
 				y0 = int(boxes[box_idx][1])
 				x1 = int(boxes[box_idx][2])
 				y1 = int(boxes[box_idx][3])
-				cv2.rectangle(image_mark, (x0, y0), (x1,y1), (1, 1, 255), 5)
-				cv2.circle(image_mark, (x0, y0), 5, (255, 1, 1), -1) #Blue
-				cv2.circle(image_mark, (x1,y1), 5, (1, 255, 1), -1) #Green
-				cv2.imwrite(image_path + "/" + image_name.split(".jpg")[0] + "_MARKED.jpg", image_mark)
+				if 1 == image_id:
+					cv2.rectangle(image_mark, (x0, y0), (x1,y1), (1, 1, 255), 5)
+					cv2.circle(image_mark, (x0, y0), 5, (255, 1, 1), -1) #Blue
+					cv2.circle(image_mark, (x1,y1), 5, (1, 255, 1), -1) #Green
+					cv2.imwrite(image_path + "/" + image_name.split(".jpg")[0] + "_MARKED.jpg", image_mark)
 			if 0:
 				cv2.namedWindow(image_name, 0)
 				cv2.imshow(image_name, image)
@@ -355,10 +356,11 @@ def augment_rotation(angle_idx, angle_array, txt_input_path, image_input_path, x
 			obj.findall('shape/points/y')[1].text = obj.find('bndbox/ymax').text
 
 			tree.write(xml_output_path + "/" + image_name + '_' + str(angle_array[angle_idx]) + "_rotate.xml", encoding='utf-8', xml_declaration=True)
-			cv2.rectangle(image_mark, (t_xmin, t_ymin), (t_xmax, t_ymax), color_type, 5)
-			cv2.circle(image_mark, (t_xmin, t_ymin), 5, (255, 1, 1), -1) #Blue
-			cv2.circle(image_mark, (t_xmax, t_ymax), 5, (1, 255, 1), -1) #Green
-			cv2.imwrite(image_output_path + "/" + image_name + '_' + str(angle_array[angle_idx])  + "_rotate_MARKED.jpg", image_mark)
+			if 1 == image_id:
+				cv2.rectangle(image_mark, (t_xmin, t_ymin), (t_xmax, t_ymax), color_type, 5)
+				cv2.circle(image_mark, (t_xmin, t_ymin), 5, (255, 1, 1), -1) #Blue
+				cv2.circle(image_mark, (t_xmax, t_ymax), 5, (1, 255, 1), -1) #Green
+				cv2.imwrite(image_output_path + "/" + image_name + '_' + str(angle_array[angle_idx])  + "_rotate_MARKED.jpg", image_mark)
 			if 0:
 				#cv2.rectangle(image_mark, (xmin, ymin), (xmax, ymax), (1, 1, 255), 5)
 				#cv2.rectangle(image_mark, (t_xmin, t_ymin), (t_xmax, t_ymax), (1, 255, 1), 5)
@@ -442,10 +444,11 @@ def augment_flip(flip, txt_input_path, image_input_path, xml_input_path, txt_out
 			obj.findall('shape/points/y')[1].text = obj.find('bndbox/ymax').text
 
 			tree.write(xml_output_path + "/" + image_name + '_' + str(flip) + "_flip.xml", encoding='utf-8', xml_declaration=True)
-			cv2.rectangle(image_mark, (t_xmin, t_ymin), (t_xmax, t_ymax), color_type, 5)
-			cv2.circle(image_mark, (t_xmin, t_ymin), 5, (255, 1, 1), -1) #Blue
-			cv2.circle(image_mark, (t_xmax, t_ymax), 5, (1, 255, 1), -1) #Green
-			cv2.imwrite(image_output_path + "/" + image_name + '_' + str(flip)  + "_flip_MARKED.jpg", image_mark)
+			if 1 == image_id:
+				cv2.rectangle(image_mark, (t_xmin, t_ymin), (t_xmax, t_ymax), color_type, 5)
+				cv2.circle(image_mark, (t_xmin, t_ymin), 5, (255, 1, 1), -1) #Blue
+				cv2.circle(image_mark, (t_xmax, t_ymax), 5, (1, 255, 1), -1) #Green
+				cv2.imwrite(image_output_path + "/" + image_name + '_' + str(flip)  + "_flip_MARKED.jpg", image_mark)
 			if 0:
 				#cv2.rectangle(image_mark, (xmin, ymin), (xmax, ymax), (1, 1, 255), 5)
 				cv2.rectangle(image_mark, (t_xmin, t_ymin), (t_xmax, t_ymax), (1, 255, 1), 5)			
@@ -547,10 +550,11 @@ def augment_crop(crop, txt_input_path, image_input_path, xml_input_path, txt_out
 			obj.findall('shape/points/y')[1].text = obj.find('bndbox/ymax').text
 
 			tree.write(xml_output_path + "/" + image_name + '_' + str(crop) + "_crop.xml", encoding='utf-8', xml_declaration=True)
-			cv2.rectangle(image_mark, (xmin, ymin), (xmax, ymax), color_type, 5)
-			cv2.circle(image_mark, (xmin, ymin), 5, (255, 1, 1), -1) #Blue
-			cv2.circle(image_mark, (xmax, ymax), 5, (1, 255, 1), -1) #Green
-			cv2.imwrite(image_output_path + "/" + image_name + '_' + str(crop)  + "_crop_MARKED.jpg", image_mark)
+			if 1 == image_id:
+				cv2.rectangle(image_mark, (xmin, ymin), (xmax, ymax), color_type, 5)
+				cv2.circle(image_mark, (xmin, ymin), 5, (255, 1, 1), -1) #Blue
+				cv2.circle(image_mark, (xmax, ymax), 5, (1, 255, 1), -1) #Green
+				cv2.imwrite(image_output_path + "/" + image_name + '_' + str(crop)  + "_crop_MARKED.jpg", image_mark)
 			if 0:
 				cv2.rectangle(image_mark, (xmin, ymin), (xmax, ymax), (1, 255, 1), 5)			
 				cv2.namedWindow(str(crop), 0)
