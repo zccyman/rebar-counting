@@ -590,14 +590,14 @@ def augment(is_rotate, is_flip, is_crop):
 			augment_flip(flip, txt_input_path, image_input_path, xml_input_path, txt_output_path, image_output_path, xml_output_path)
 
 	if is_crop:
-		total_crop_num = 100
-		for crop in range(0, total_crop_num):
+		total_crop_num = 1
+		for crop in range(total_crop_num - 1, total_crop_num):
 			view_bar(crop, total_crop_num)
 			print("crop: ", crop)
 	
-			txt_output_path = "data/VOCdevkit2007/" + "VOC2007_crop"+ "/ImageSets/Main"
-			image_output_path = "data/VOCdevkit2007/" + "VOC2007_crop" + "/JPEGImages"
-			xml_output_path = "data/VOCdevkit2007/" + "VOC2007_crop" + "/Annotations"
+			txt_output_path = "data/VOCdevkit2007/" + "VOC2007_crop_" + str(crop) + "/ImageSets/Main"
+			image_output_path = "data/VOCdevkit2007/" + "VOC2007_crop_" + str(crop) + "/JPEGImages"
+			xml_output_path = "data/VOCdevkit2007/" + "VOC2007_crop_" + str(crop) + "/Annotations"
 			
 			if_no_exist_path_and_make_path(txt_output_path)
 			if_no_exist_path_and_make_path(image_output_path)
