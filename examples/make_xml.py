@@ -19,7 +19,13 @@ from xml.etree.ElementTree import Element,ElementTree
 import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser(description='Data Augment for rebar counting')
+parser.add_argument('--is_rotate', dest='is_rotate', help='whether to rotate image for augment', default=0, type=int)
+parser.add_argument('--rotation_angle', dest='rotation_angle', help='rotation_angle', default=180, type=int)
+parser.add_argument('--is_flip', dest='is_flip', help='whether to flip image for augment', default=0, type=int)
+parser.add_argument('--flip_type', dest='flip_type', help='the method of flip', default=0, type=int)
+parser.add_argument('--is_crop', dest='is_crop', help='whether to crop image for augment', default=0, type=int)
 parser.add_argument('--crop_num', dest='crop_num', help='number of crop', default=0, type=int)
+
 
 args = parser.parse_args()
 
@@ -570,14 +576,16 @@ def csvToxml():
 	#parse_csv(test_csv_file_name, image_path, xml_output_path, trainval_dataset, 0)
 
 #@jit
-def augment(is_rotate, is_flip, is_crop):
+def augment():
 	txt_input_path = "data/VOCdevkit2007/VOC2007_origin/ImageSets/Main"
 	image_input_path = "data/VOCdevkit2007/VOC2007_origin/JPEGImages"
 	xml_input_path = "data/VOCdevkit2007/VOC2007_origin/Annotations"
 
-	if is_rotate:
-		angle_array = [-180, -90, -6, -4, -2, 0, 2, 4, 6, 90]
+	if args.is_rotate:
+		angle_array = [args.rotation_angle]#[-180, -90, -6, -4, -2, 0, 2, 4, 6, 90]
 		for angle_idx in range(0, len(angle_array)):
+			print("angle: ", angle_array[angle_idx])
+			
 			txt_output_path = "data/VOCdevkit2007/" + "VOC2007_rotation_" + str(angle_array[angle_idx]) + "/ImageSets/Main"
 			image_output_path = "data/VOCdevkit2007/" + "VOC2007_rotation_" + str(angle_array[angle_idx]) + "/JPEGImages"
 			xml_output_path = "data/VOCdevkit2007/" + "VOC2007_rotation_" + str(angle_array[angle_idx]) + "/Annotations"
@@ -588,8 +596,8 @@ def augment(is_rotate, is_flip, is_crop):
 
 			augment_rotation(angle_idx, angle_array, txt_input_path, image_input_path, xml_input_path, txt_output_path, image_output_path, xml_output_path)
 
-	if is_flip:
-		flip_array = [-1, 0, 1]
+	if args.is_flip:
+		flip_array = [args.flip_type] #[-1, 0, 1]
 		for flip in flip_array:
 			print("flip: ", flip)
 
@@ -603,10 +611,9 @@ def augment(is_rotate, is_flip, is_crop):
 
 			augment_flip(flip, txt_input_path, image_input_path, xml_input_path, txt_output_path, image_output_path, xml_output_path)
 
-	if is_crop:
+	if args.is_crop:
 		crop_num = args.crop_num
 		for crop in range(crop_num - 1, crop_num):
-			view_bar(crop, crop_num)
 			print("crop: ", crop)
 	
 			txt_output_path = "data/VOCdevkit2007/" + "VOC2007_crop_" + str(crop) + "/ImageSets/Main"
@@ -622,8 +629,5 @@ def augment(is_rotate, is_flip, is_crop):
 if __name__ == "__main__":
 	#csvToxml()
 
-	is_rotate = 0
-	is_flip = 0
-	is_crop = 1
-	augment(is_rotate, is_flip, is_crop)
+	augment()
 
