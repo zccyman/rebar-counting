@@ -4,6 +4,7 @@
 
 import os
 import sys
+import argparse
 import cv2
 import csv
 import random
@@ -16,6 +17,11 @@ import xml.etree.cElementTree as ET
 from xml.etree.ElementTree import Element,ElementTree
 
 import matplotlib.pyplot as plt
+
+parser = argparse.ArgumentParser(description='Data Augment for rebar counting')
+parser.add_argument('--crop_num', dest='crop_num', help='number of crop', default=0, type=int)
+
+args = parser.parse_args()
 
 ratio = []
 box_w = []
@@ -598,9 +604,9 @@ def augment(is_rotate, is_flip, is_crop):
 			augment_flip(flip, txt_input_path, image_input_path, xml_input_path, txt_output_path, image_output_path, xml_output_path)
 
 	if is_crop:
-		total_crop_num = 1
-		for crop in range(total_crop_num - 1, total_crop_num):
-			view_bar(crop, total_crop_num)
+		crop_num = args.crop_num
+		for crop in range(crop_num - 1, crop_num):
+			view_bar(crop, crop_num)
 			print("crop: ", crop)
 	
 			txt_output_path = "data/VOCdevkit2007/" + "VOC2007_crop_" + str(crop) + "/ImageSets/Main"
