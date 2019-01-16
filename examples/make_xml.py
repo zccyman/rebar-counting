@@ -172,7 +172,8 @@ def parse_csv(csv_file_name, image_path, xml_output_path, trainval_dataset, flag
 	for i in range(len(df['ID'])):
 		if image_name == df['ID'][i]:
 			#print(type(image_name))
-			if type(image_name) != str:
+			#if type(image_name) != str:
+			if image_name == "end":
 				print("image_name is not exist...")
 				continue
 			image = cv2.imread(image_path + "/" + image_name, -1)
@@ -221,7 +222,8 @@ def parse_csv(csv_file_name, image_path, xml_output_path, trainval_dataset, flag
 			boxes = []
 			image_name = df['ID'][i]
 			#print(type(image_name))
-			if type(image_name) != str:
+			#if type(image_name) != str:
+			if image_name == "end":
 				print("image_name is not exist...")
 				continue
 			image = cv2.imread(image_path + "/" + image_name, -1)
