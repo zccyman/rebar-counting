@@ -19,13 +19,13 @@ python make_xml.py
 - Methods
 	- Rotation: [-180, -90, -6, -4, -2, 0, 2, 4, 6, 90]
 	```
-	sh data_augment_rotate.sh 2
+	sh data_augment_rotate.sh {-180, -90, -6, -4, -2, 0, 2, 4, 6, 90}
 	```
 	- Flip: [-1, 0, 1]
 	```
-	sh data_augment_flip.sh 1
+	sh data_augment_flip.sh {-1, 0, 1}
 	```
 	- Crop: [1, 2, 3,..., n]
 	```
-	sh data_augment_crop.sh 1
+	sh data_augment_crop.sh {1, 2, 3}
 	```
