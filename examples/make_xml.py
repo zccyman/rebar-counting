@@ -457,7 +457,7 @@ def augment_crop(crop, txt_input_path, image_input_path, xml_input_path, txt_out
 		view_bar(image_id, total_images)
 		image_id = image_id + 1
 
-		crop_ratio = (3 / 4)
+		crop_ratio = float(random.randint(75, 98)) / 100.0
 		crop_size_x = int(image.shape[1] * crop_ratio)
 		crop_size_y = int(image.shape[0] * crop_ratio)
 		#print(crop_size_x, crop_size_y)
