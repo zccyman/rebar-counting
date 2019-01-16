@@ -324,16 +324,16 @@ def augment_rotation(angle_idx, angle_array, txt_input_path, image_input_path, x
 			x11 = xmax
 			y11 = ymax
 
-			#x01 = x11
-			#y01 = y00
+			x01 = x11
+			y01 = y00
 
-			#x10 = x00
-			#y10 = y11
+			x10 = x00
+			y10 = y11
 
 			t_x00, t_y00 = rotate_point(x00, y00, center_x, center_y, angle_array[angle_idx], angle_idx)
 			t_x11, t_y11 = rotate_point(x11, y11, center_x, center_y, angle_array[angle_idx], angle_idx)
-			t_x01, t_y01 = (t_x11, t_y00)#rotate_point(x01, y01, center_x, center_y, angle_array[angle_idx], angle_idx)
-			t_x10, t_y10 = (t_x00, t_y11)#rotate_point(x10, y10, center_x, center_y, angle_array[angle_idx], angle_idx)
+			t_x01, t_y01 = rotate_point(x01, y01, center_x, center_y, angle_array[angle_idx], angle_idx) #(t_x11, t_y00)#
+			t_x10, t_y10 = rotate_point(x10, y10, center_x, center_y, angle_array[angle_idx], angle_idx) #(t_x00, t_y11)#
 
 
 			t_xarray = [t_x00, t_x01, t_x10, t_x11]
