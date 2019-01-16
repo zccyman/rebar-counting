@@ -552,7 +552,7 @@ def augment(is_rotate, is_flip, is_crop):
 	xml_input_path = "data/VOCdevkit2007/VOC2007_origin/Annotations"
 
 	if is_rotate:
-		angle_array = [-90, -6, -4, -2, 0, 2, 4, 6, 90]
+		angle_array = [-180, -90, -6, -4, -2, 0, 2, 4, 6, 90]
 		for angle_idx in range(0, len(angle_array)):
 			txt_output_path = "data/VOCdevkit2007/" + "VOC2007_rotation_" + str(angle_array[angle_idx]) + "/ImageSets/Main"
 			image_output_path = "data/VOCdevkit2007/" + "VOC2007_rotation_" + str(angle_array[angle_idx]) + "/JPEGImages"
@@ -580,9 +580,11 @@ def augment(is_rotate, is_flip, is_crop):
 			augment_flip(flip, txt_input_path, image_input_path, xml_input_path, txt_output_path, image_output_path, xml_output_path)
 
 	if is_crop:
-		for crop in range(0, 1):
+		total_crop_num = 100
+		for crop in range(0, total_crop_num):
+			view_bar(crop, total_crop_num)
 			print("crop: ", crop)
-
+	
 			txt_output_path = "data/VOCdevkit2007/" + "VOC2007_crop"+ "/ImageSets/Main"
 			image_output_path = "data/VOCdevkit2007/" + "VOC2007_crop" + "/JPEGImages"
 			xml_output_path = "data/VOCdevkit2007/" + "VOC2007_crop" + "/Annotations"
