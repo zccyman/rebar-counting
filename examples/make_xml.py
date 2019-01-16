@@ -453,7 +453,6 @@ def augment_crop(crop, txt_input_path, image_input_path, xml_input_path, txt_out
 
 		random_x = random.randint(-int(image.shape[1] / 10), int(image.shape[1] / 10))
 		random_y = random.randint(-int(image.shape[0] / 10), int(image.shape[0] / 10))
-		print(random_x, random_y)
 		center_x = image.shape[1] / 2 + random_x
 		center_y = image.shape[0] / 2 + random_y
 		
@@ -504,7 +503,7 @@ def augment_crop(crop, txt_input_path, image_input_path, xml_input_path, txt_out
 				xmax = 4
 				ymax = 4
 
-			print(xmin, ymin, xmax, ymax)
+			#print(xmin, ymin, xmax, ymax)
 
 			obj.find('bndbox/xmin').text = str(xmin)
 			obj.find('bndbox/ymin').text = str(ymin)
@@ -600,6 +599,6 @@ if __name__ == "__main__":
 
 	is_rotate = 0
 	is_flip = 0
-	is_crop = 0
+	is_crop = 1
 	augment(is_rotate, is_flip, is_crop)
 
