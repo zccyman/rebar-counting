@@ -29,3 +29,7 @@ python make_xml.py
 	```
 	sh data_augment_crop.sh 1
 	```
+	- Perspective
+	```
+	python make_xml.py --is_perspective 1
+	```

@@ -25,7 +25,7 @@ parser.add_argument('--is_flip', dest='is_flip', help='whether to flip image for
 parser.add_argument('--flip_type', dest='flip_type', help='the method of flip', default=0, type=int)
 parser.add_argument('--is_crop', dest='is_crop', help='whether to crop image for augment', default=0, type=int)
 parser.add_argument('--crop_num', dest='crop_num', help='number of crop', default=0, type=int)
-
+parser.add_argument('--is_perspective', dest='is_perspective', help='whether to perspective image for augment', default=0, type=int)#added by zhiqiangchen
 
 args = parser.parse_args()
 
@@ -578,7 +578,109 @@ def augment_crop(crop, txt_input_path, image_input_path, xml_input_path, txt_out
 				cv2.waitKey(0)
 				cv2.destroyAllWindows()
 		#break
-	
+
+def augment_perspective(perspective, txt_input_path, image_input_path, xml_input_path, txt_output_path, image_output_path, xml_output_path):
+	total_images = len(open(txt_input_path + "/train.txt",'rU').readlines())
+
+	image_id = 0
+	for image_name in open(txt_input_path + "/train.txt"):
+		image_name = image_name.strip('\n')
+		print(image_input_path + "/" + image_name + ".jpg")
+		image = cv2.imread(image_input_path + "/" + image_name + ".jpg", -1)
+		if image is None:
+			print("image is NULL...")
+			continue
+
+		view_bar(image_id, total_images)
+		image_id = image_id + 1
+		
+		shutil.copyfile(xml_input_path + "/" + image_name + ".xml", xml_output_path + "/" + image_name + '_' + str(perspective) + "_perspective.xml")
+
+		print(xml_output_path + "/" + image_name + '_' + str(perspective) + "_perspective.xml")
+		tree = ET.parse(xml_output_path + "/" + image_name + '_' + str(perspective) + "_perspective.xml")
+		
+		#added by zhiqiangchen
+		boxes = []
+		for xml_obeject in tree.findall('object'):
+			bndbox = xml_obeject.find('bndbox')
+			xmin = float(bndbox.find('xmin').text)
+			ymix = float(bndbox.find('ymin').text)
+			xmax = float(bndbox.find('xmax').text)
+			ymax = float(bndbox.find('ymax').text)
+			boxes = np.hstack((boxes,[xmin,ymix,1.0],[xmax,ymix,1.0],[xmin,ymax,1.0],[xmax,ymax,1.0]))
+		boxes = boxes.reshape(-1,3)
+
+		O_xmin,O_ymin,scale_min = boxes[boxes.argmin(axis=0),np.arange(boxes.shape[1])]
+		O_xmax,O_ymax,scale_max = boxes[boxes.argmax(axis=0),np.arange(boxes.shape[1])]
+    	#print type(O_xmin)
+    	#image = cv2.rectangle(image,(int(O_xmin),int(O_ymin)), (int(O_xmax),int(O_ymax)), (0,0,255))
+
+		pts1 = np.float32([[O_xmin,O_ymin],[image.shape[1]-1,0],[O_xmax,O_ymax],[0,image.shape[0]-1]])
+		pts2 = np.float32([[0,0],[image.shape[1]-1,0],[image.shape[1]-1,image.shape[0]-1],[0,image.shape[0]-1]])
+		M = cv2.getPerspectiveTransform(pts1, pts2)
+		image_perspective = cv2.warpPerspective(image, M, (image.shape[1],image.shape[0]))
+		
+		warp_boxes = np.dot(M,boxes.transpose())
+		x_warp_boxes = (warp_boxes[0]/warp_boxes[2]).reshape(-1,4)
+		y_warp_boxes = (warp_boxes[1]/warp_boxes[2]).reshape(-1,4)
+
+		x_min_warp = x_warp_boxes[np.arange(x_warp_boxes.shape[0]),x_warp_boxes.argmin(axis=1)]
+		x_max_warp = x_warp_boxes[np.arange(x_warp_boxes.shape[0]),x_warp_boxes.argmax(axis=1)]
+
+		y_min_warp = y_warp_boxes[np.arange(y_warp_boxes.shape[0]),y_warp_boxes.argmin(axis=1)]
+		y_max_warp = y_warp_boxes[np.arange(y_warp_boxes.shape[0]),y_warp_boxes.argmax(axis=1)]
+		#added by zhiqiangchen
+
+		image_mark = image_perspective.copy()
+		cv2.imwrite(image_output_path + "/" + image_name + '_' + str(perspective) + '_perspective.jpg', image_perspective)
+
+		root = tree.getroot()
+		root.find('filename').text = image_name + '_' + str(perspective) + '_perspective.jpg'
+
+		#image_size	
+		#print(image_crop.shape[1], image_crop.shape[0], image_crop.shape[2])
+		root.find("size/width").text = str(image_perspective.shape[1])
+		root.find("size/height").text = str(image_perspective.shape[0])
+		root.find("size/depth").text = str(image_perspective.shape[2])
+
+		for idx, obj in enumerate(root.findall('object')):
+			shape_color_type = obj.find('shape').get('color')
+			color_type = (1, 1, 255)
+			if 'Red' == shape_color_type:
+				color_type = (1, 1, 255)
+			elif 'Green' == shape_color_type:
+				color_type = (1, 255, 1)
+
+			xmin = int(x_min_warp[idx] if x_min_warp[idx]>0 else 0)
+			ymin = int(y_min_warp[idx] if y_min_warp[idx]>0 else 0)
+			xmax = int(x_max_warp[idx] if x_max_warp[idx]<float(image.shape[1]-1) else float(image.shape[1]-1))
+			ymax = int(y_max_warp[idx] if y_max_warp[idx]<float(image.shape[0]-1) else float(image.shape[0]-1))
+
+			obj.find('bndbox/xmin').text = str(xmin)
+			obj.find('bndbox/ymin').text = str(ymin)
+			obj.find('bndbox/xmax').text = str(xmax)
+			obj.find('bndbox/ymax').text = str(ymax)
+
+			obj.findall('shape/points/x')[0].text = obj.find('bndbox/xmin').text
+			obj.findall('shape/points/y')[0].text = obj.find('bndbox/ymin').text
+			obj.findall('shape/points/x')[1].text = obj.find('bndbox/xmax').text
+			obj.findall('shape/points/y')[1].text = obj.find('bndbox/ymax').text
+
+			tree.write(xml_output_path + "/" + image_name + '_' + str(perspective) + "_perspective.xml", encoding='utf-8', xml_declaration=True)
+			if 1 == image_id:
+				cv2.rectangle(image_mark,(int(O_xmin),int(O_ymin)), (int(O_xmax),int(O_ymax)), (0,0,255))
+				cv2.rectangle(image_mark, (xmin, ymin), (xmax, ymax), color_type, 5)
+				cv2.circle(image_mark, (xmin, ymin), 5, (255, 1, 1), -1) #Blue
+				cv2.circle(image_mark, (xmax, ymax), 5, (1, 255, 1), -1) #Green
+				cv2.imwrite(image_output_path + "/" + image_name + '_' + str(perspective)  + "_perspective_MARKED.jpg", image_mark)
+			if 0:
+				cv2.rectangle(image_mark, (xmin, ymin), (xmax, ymax), (1, 255, 1), 5)			
+				cv2.namedWindow(str(perspective), 0)
+				cv2.imshow(str(perspective), image_mark)
+				cv2.waitKey(0)
+				cv2.destroyAllWindows()
+		#break
+
 #@jit
 def csvToxml():
 	train_csv_file_name = "train_labels.csv"
@@ -645,6 +747,20 @@ def augment():
 			if_no_exist_path_and_make_path(xml_output_path)
 
 			augment_crop(crop, txt_input_path, image_input_path, xml_input_path, txt_output_path, image_output_path, xml_output_path)
+
+	if args.is_perspective:
+		perspective = 0
+		print("perspective: ", perspective)
+
+		txt_output_path = "data/VOCdevkit2007/" + "VOC2007_perspective_" + str(perspective) + "/ImageSets/Main"
+		image_output_path = "data/VOCdevkit2007/" + "VOC2007_perspective_" + str(perspective) + "/JPEGImages"
+		xml_output_path = "data/VOCdevkit2007/" + "VOC2007_perspective_" + str(perspective) + "/Annotations"
+		
+		if_no_exist_path_and_make_path(txt_output_path)
+		if_no_exist_path_and_make_path(image_output_path)
+		if_no_exist_path_and_make_path(xml_output_path)
+
+		augment_perspective(perspective, txt_input_path, image_input_path, xml_input_path, txt_output_path, image_output_path, xml_output_path)
 
 if __name__ == "__main__":
 	#csvToxml()
